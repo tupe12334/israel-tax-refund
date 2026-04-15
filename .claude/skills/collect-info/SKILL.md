@@ -17,8 +17,24 @@ Detect the user's language from their first message and respond entirely in that
 - After each answer, acknowledge it briefly and move to the next group.
 - Validate inputs as you collect them (see VALIDATION section below).
 - If the user is unsure about a field, explain where to find it (e.g., "Field 158 is on the top-right of your Form 106").
+- **Save the data file after every step** — do not wait until the end. See SAVING section below.
 - At the end, print a full structured summary and ask the user to confirm it before finishing.
 - Store all collected data in a clearly labelled block so subsequent skills (login, form-fill) can use it directly.
+
+---
+
+## SAVING
+
+After **every step** (1 through 9), immediately write the current collected data to disk:
+
+- Directory: `./data/` — create it with `mkdir -p ./data` if it doesn't exist yet.
+- File path: `./data/<id_number>.md` using the filer's 9-digit Israeli ID.
+  - Before Step 2 is complete (no ID yet), use `./data/draft.md` as a temporary filename.
+  - Once the ID is collected in Step 2, rename by writing to `./data/<id_number>.md` (you can simply write the new file; the draft can remain).
+- File content: the same structured block as the SUMMARY template below, but only populate the fields collected so far — leave unpopulated fields blank or omit them.
+- Wrap the content in a markdown code fence labeled `tax-data`, under a heading `# Tax Refund Data — <name or "Draft">`.
+
+Write silently — do not announce the save to the user after every step. A single quiet mention like "(progress saved)" at the end of your acknowledgement message is enough.
 
 ---
 
@@ -29,6 +45,8 @@ Ask: "Which tax year are you claiming a refund for? (You can go back up to 6 yea
 - Valid range: 2019 through 2024 (filing year is 2025 — adjust if current year changes).
 - A user may claim multiple years; handle each as a separate data set.
 - If they say "all years I can" or "I'm not sure", tell them the 6-year window and suggest starting with the most recent year first.
+
+**After this step:** save to `./data/draft.md` with only `TAX_YEAR` populated.
 
 ---
 
@@ -44,6 +62,8 @@ Collect for the **primary filer**:
 | Mobile phone | טלפון נייד | Used for OTP login; Israeli format 05X-XXXXXXX |
 | Email address | כתובת דוא"ל | For correspondence |
 
+**After this step:** save to `./data/<id_number>.md` with `TAX_YEAR` and `PERSONAL` populated.
+
 ---
 
 ## STEP 3 — MARITAL STATUS
@@ -56,6 +76,8 @@ Ask: "What is your marital status? (Single / Married / Divorced / Widowed)"
 - Explain: "Married couples must file together and report both incomes."
 - Collect spouse details: ID number, full name, date of birth.
 - Ask: "Was your spouse also employed during [tax year]?" → if yes, collect spouse Form 106 data in Step 4.
+
+**After this step:** update the file with `marital_status` and `SPOUSE` (if applicable).
 
 ---
 
@@ -78,6 +100,8 @@ If the user had more than one employer, repeat for each. If they had a **tax coo
 
 **If MARRIED and spouse was employed:** Repeat this step for the spouse (collect same Form 106 fields for each of their employers).
 
+**After this step:** update the file with `EMPLOYERS` and `SPOUSE_EMPLOYERS` (if applicable).
+
 ---
 
 ## STEP 5 — NATIONAL INSURANCE BENEFITS (ביטוח לאומי)
@@ -93,6 +117,8 @@ Present as a checklist — collect for each applicable item:
 
 > "These figures appear on the annual certificate (אישור שנתי) issued by ביטוח לאומי."
 
+**After this step:** update the file with `NII_BENEFITS`.
+
 ---
 
 ## STEP 6 — INVESTMENT & SAVINGS INCOME (Form 867 / טופס 867)
@@ -105,6 +131,8 @@ If yes, for **each financial institution** (bank, broker):
 - Income tax withheld at source
 
 > "Form 867 is an annual tax certificate from your bank or investment broker."
+
+**After this step:** update the file with `INVESTMENT_INCOME`.
 
 ---
 
@@ -146,6 +174,8 @@ Ask each of the following yes/no questions; collect details only when the answer
 "Are you a single parent?"
 - If yes: note it (entitles to additional credit point).
 
+**After this step:** update the file with `TAX_CREDITS`.
+
 ---
 
 ## STEP 8 — DEDUCTIONS
@@ -163,6 +193,8 @@ Ask each of the following yes/no questions; collect details only when the answer
 ### 8c. Professional Development Fund — Keren Hishtalmut (קרן השתלמות)
 - Usually handled via paycheck; ask only if the user deposited directly.
 
+**After this step:** update the file with `DEDUCTIONS`.
+
 ---
 
 ## STEP 9 — BANK ACCOUNT FOR REFUND (חשבון בנק להחזר)
@@ -178,6 +210,8 @@ Collect:
 | Account holder name | שם בעל החשבון | Should match the ID holder; flag if different |
 
 > "You can find all three numbers on a blank check (שיק), or on the bank's website / app under 'account details'."
+
+**After this step:** update the file with `BANK`.
 
 ---
 
@@ -253,25 +287,9 @@ BANK:
 === END OF SUMMARY ===
 ```
 
-After the user confirms, save the collected data to a markdown file using the Write tool:
+After the user confirms, do a final write of the complete summary to `./data/<id_number>.md` (overwriting the incremental saves with the confirmed, final version).
 
-- File path: `./data/<id_number>.md` (use the filer's 9-digit Israeli ID as the filename)
-- File content: the full structured summary block above, wrapped in a markdown code fence labeled `tax-data`
-
-Example file content:
-```markdown
-# Tax Refund Data — <full name>
-
-\`\`\`tax-data
-=== TAX REFUND DATA SUMMARY ===
-... (the complete summary)
-=== END OF SUMMARY ===
-\`\`\`
-```
-
-Create the `./data/` directory if it does not exist (use a Bash `mkdir -p ./data` call before writing).
-
-After saving, tell the user: "Great — your information has been saved to `./data/<id_number>.md`. You can now run the login skill to begin the submission."
+Tell the user: "Great — your information has been saved to `./data/<id_number>.md`. You can now run the login skill to begin the submission."
 
 ---
 
