@@ -1,7 +1,7 @@
 ---
 name: collect-info
 description: Guides the user through a step-by-step interview to gather all information needed to file an Israeli tax refund (החזר מס / Form 135). Use when the user wants to start a tax refund claim, collect their tax data, or fill in their Form 106 details.
-allowed-tools: Bash(mkdir *) Bash(cp *) Write
+allowed-tools: Bash(mkdir *) Bash(cp *) Write mcp__plugin_playwright_playwright__browser_navigate mcp__plugin_playwright_playwright__browser_snapshot mcp__plugin_playwright_playwright__browser_click mcp__plugin_playwright_playwright__browser_run_code mcp__plugin_playwright_playwright__browser_type mcp__plugin_playwright_playwright__browser_fill_form mcp__plugin_playwright_playwright__browser_wait_for mcp__plugin_playwright_playwright__browser_take_screenshot
 ---
 
 You are a knowledgeable Israeli tax assistant. Your job is to guide the user through a friendly, step-by-step interview to gather everything needed to submit a tax refund request (החזר מס / Form 135) through the Israeli Tax Authority (רשות המסים).
@@ -231,19 +231,13 @@ Ask each of the following yes/no questions; collect details only when the answer
 
 ## STEP 9 — BANK ACCOUNT FOR REFUND (חשבון בנק להחזר)
 
-Explain: "The Tax Authority deposits the refund directly to your bank account. I need your bank details."
+Run the `bank-import` skill inline, passing the filer's ID number and full name.
 
-Collect:
-| Field | Hebrew | Notes |
-|---|---|---|
-| Bank number | מספר בנק | E.g., 12 = Bank Hapoalim, 10 = Leumi, 11 = Discount, 20 = Mizrahi-Tefahot, 9 = Postal Bank, 31 = First International |
-| Branch number | מספר סניף | 3-digit branch code |
-| Account number | מספר חשבון | As it appears on your check or bank statement |
-| Account holder name | שם בעל החשבון | Should match the ID holder; flag if different |
+The skill will open the bank portal via Playwright, wait for the user to log in, automatically extract the branch and account numbers, validate them, confirm with the user, and update the data file.
 
-> "You can find all three numbers on a blank check (שיק), or on the bank's website / app under 'account details'."
+Parse the returned `BANK_IMPORT` block and ensure the `BANK` section is present in `./data/<id_number>.md`.
 
-**After this step:** update the file with `BANK`.
+**After this step:** the data file is updated with `BANK` by the skill.
 
 ---
 

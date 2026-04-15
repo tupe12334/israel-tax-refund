@@ -58,7 +58,8 @@
       "mcp__plugin_playwright_playwright__browser_tabs",
       "mcp__plugin_playwright_playwright__browser_press_key",
       "mcp__plugin_playwright_playwright__browser_wait_for",
-      "Skill(hapoalim-import)"
+      "Skill(hapoalim-import)",
+      "Skill(bank-import)"
     ]
   }
 }
