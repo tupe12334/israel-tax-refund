@@ -77,7 +77,18 @@ Once the MyIDF login form is visible:
 3. Take a screenshot to verify the fields are populated.
 4. Do **not** submit yet — tell the user to complete any remaining steps (OTP, captcha) themselves.
 
-Tell the user:
+**Try to auto-read the OTP from Messages.app** — run the `sms-otp` skill immediately after the login form appears:
+```
+Skill(sms-otp) --service idf --minutes 10
+```
+- If `sms-otp` returns a code:
+  - Extract the `code:` value.
+  - Type it into the OTP input field using `mcp__playwright__browser_type`.
+  - Take a screenshot to confirm entry.
+  - Tell the user: "I found your OTP in Messages.app and entered it automatically."
+  - Wait for the user to click submit / confirm the OTP step.
+- If `sms-otp` returns no result:
+  - Tell the user:
 
 > "פורטל האישורים של צה\"ל פתוח — לחצתי על **הזדהות דרך משתמש MyIdf** ומילאתי אוטומטית את כתובת המייל והסיסמה.
 >
