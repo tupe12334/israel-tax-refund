@@ -1,12 +1,14 @@
 ---
 name: idf-service
-description: Fetches IDF military service record from the IDF personal portal (פורטל האישי של צה"ל) to extract service start and discharge dates, calculate total service length, and determine tax credit eligibility. Run during the collect-info flow to auto-populate the military service section (Step 7c).
+description: Fetches IDF mandatory service record from the IDF personal portal (פורטל האישי של צה"ל) to extract service start and discharge dates, calculate total service length, and determine tax credit eligibility. Run during the collect-info flow to auto-populate the military service section (Step 7c). For reserve duty (מילואים) income, use the miluim-import skill instead.
 allowed-tools: mcp__playwright__browser_navigate mcp__playwright__browser_snapshot mcp__playwright__browser_click mcp__playwright__browser_take_screenshot mcp__playwright__browser_run_code mcp__playwright__browser_wait_for mcp__playwright__browser_type mcp__playwright__browser_close Bash(ls *) Bash(mkdir *) Read Write
 ---
 
-You are an automation assistant that fetches IDF military service records from the IDF personal portal and calculates Israeli tax credit eligibility for veterans.
+You are an automation assistant that fetches IDF mandatory service records from the IDF personal portal and calculates Israeli tax credit eligibility for veterans.
 
 Your goal: retrieve the user's service start date and discharge date, compute total months served, calculate the tax credit points they are entitled to for each tax year being filed, and update the tax refund data file.
+
+> **Note:** This skill handles **mandatory service (שירות חובה / לאומי)** only. For reserve duty (מילואים) income (Form 3010), use the `miluim-import` skill.
 
 Detect the user's language from their first message and respond in it throughout (Hebrew or English).
 
@@ -37,62 +39,7 @@ Also extract `TAX_YEAR` from the data file (or ask if no file exists). Store it 
 
 ---
 
-## PORTAL SELECTION — WHICH SITE TO USE
-
-There are **two separate IDF portals**. Use the right one based on what you need:
-
-| Goal | Portal | URL |
-|---|---|---|
-| Reserve duty pay (Form 3010) | אתר מילואים | `https://www.miluim.idf.il` |
-| Mandatory service discharge date | IDF Microsoft portal | `https://www.home.idf.il` |
-
-> **Important:** `home.idf.il` requires a Microsoft/IDF **password** (not SMS) — it uses Azure AD via `login.microsoftonline.com`. If the user doesn't have this password, fall back to PDF or manual entry (STEP 6).
->
-> `miluim.idf.il` supports **SMS one-time code** login — no password needed. Use this portal to fetch Form 3010 (reserve duty income) and reserve service certificates.
-
----
-
-## STEP 2A — FETCH FORM 3010 (Reserve Duty Pay) via אתר מילואים
-
-This step retrieves reserve duty income for the tax year being filed.
-
-### 2A-1. Navigate and log in
-
-```
-https://www.miluim.idf.il/auth
-```
-
-The login page has two options — always use **"כניסה עם קוד חד פעמי"** (SMS one-time code):
-
-1. Enter the user's 9-digit Israeli ID in the "מספר ת"ז" field.
-2. Click **"כניסה עם קוד חד פעמי"**.
-3. On the next screen, set the **phone prefix** using the dropdown (e.g. `052`) — this is a separate combobox from the number field.
-4. Enter **only the 7-digit suffix** in the "טלפון נייד" field (e.g. for 052-3000346, enter `3000346`). Do NOT enter the full 10-digit number — the field will show "מספר התווים גדול מידי" (too many characters) if you do.
-5. Click **"קבלת קוד חד פעמי"** to send the SMS.
-6. Ask the user for the SMS code they received on their phone.
-7. Enter the code in the "סיסמה" (password) field and click **"כניסה לאתר"**.
-
-After login, the personal area is at `https://www.miluim.idf.il/personalzone`.
-
-### 2A-2. Generate Form 3010
-
-Navigate to: `https://www.miluim.idf.il/personalzone/milforms/form-3010`
-
-The form has two date fields in `DD.MM.YY` format:
-- "מתאריך" (from date): `01.01.<YY>` (e.g. `01.01.22` for 2022)
-- "עד לשנה" (to date): `31.12.<YY>` (e.g. `31.12.22` for 2022)
-
-Fill both fields and wait for results. If the page shows **"מצטערים, לא נמצאו תוצאות"** — the user had **no reserve duty in that year**. Record `reserve_duty: { income: 0, tax_withheld: 0 }`.
-
-If results exist, click **"הפקת טופס"** to generate the PDF and extract the income and tax withheld amounts.
-
-### 2A-3. Reserve service certificate (for tax credit evidence)
-
-The page `https://www.miluim.idf.il/miluim-forms/האישורים-שלי/` allows downloading "טופס אישור שירות מילואים מזכה". This is a formal certificate of qualifying reserve service — useful if reserve service tax credits apply (separate from the mandatory service credit).
-
----
-
-## STEP 2B — FETCH MANDATORY SERVICE DISCHARGE DATE via home.idf.il
+## STEP 2 — FETCH MANDATORY SERVICE DISCHARGE DATE via home.idf.il
 
 Navigate to:
 ```
@@ -116,7 +63,7 @@ After the user confirms login:
 2. Use the snapshot tool to get the page structure.
 3. Check whether the page shows a personal dashboard (not a login screen). Look for indicators like:
    - The user's name appearing on the page (e.g. "צהריים טובים אופק")
-   - A navigation menu with sections like "האישורים שלי", "בירורי שכר", "טופס 3010"
+   - A navigation menu with sections like "תעודות", "שחרור", "היסטוריית שירות"
    - A welcome message
 
 If still on a login/authentication page, tell the user and wait for confirmation again.
@@ -124,20 +71,6 @@ If still on a login/authentication page, tell the user and wait for confirmation
 ---
 
 ## STEP 4 — NAVIGATE TO SERVICE RECORD
-
-### On אתר מילואים (`miluim.idf.il`):
-
-Available menu sections (via the side panel — click "הצג תפריט צד"):
-- **לאיזור האישי** → `/personalzone`
-- **דו"ח 1** → `/personalzone/milforms/Report1` (attendance report — not useful for discharge dates)
-- **מילג'ובס** → `/miljobs/`
-- **האישורים שלי** → `/miluim-forms/האישורים-שלי/` (reserve service certificates)
-- **סטטוס בקשות** → `/content-pages/requests-lobby/`
-- **טופס 3010** → `/miluim-forms/טופס-3010/` (reserve duty tax form)
-
-> Note: אתר מילואים only contains **reserve duty** service data. Mandatory service (שירות חובה) discharge dates are NOT available here.
-
-### On `home.idf.il`:
 
 Look for sections related to "שחרור", "תעודות", or "היסטוריית שירות" in the personal dashboard.
 
