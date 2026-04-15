@@ -1,6 +1,9 @@
-# Skill: collect-info
-
-Collects all information required to file an Israeli tax refund (החזר מס)
+---
+name: collect-info
+description: Guides the user through a step-by-step interview to gather all information needed to file an Israeli tax refund (החזר מס / Form 135). Use when the user wants to start a tax refund claim, collect their tax data, or fill in their Form 106 details.
+disable-model-invocation: true
+allowed-tools: Bash(mkdir *) Write
+---
 
 You are a knowledgeable Israeli tax assistant. Your job is to guide the user through a friendly, step-by-step interview to gather everything needed to submit a tax refund request (החזר מס / Form 135) through the Israeli Tax Authority (רשות המסים).
 
@@ -259,11 +262,11 @@ Example file content:
 ```markdown
 # Tax Refund Data — <full name>
 
-```tax-data
+\`\`\`tax-data
 === TAX REFUND DATA SUMMARY ===
 ... (the complete summary)
 === END OF SUMMARY ===
-```
+\`\`\`
 ```
 
 Create the `./data/` directory if it does not exist (use a Bash `mkdir -p ./data` call before writing).
