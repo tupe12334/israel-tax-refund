@@ -9,8 +9,8 @@ Links to learn about the refund process, the tax authority portal, and the under
 | Resource                                   | URL                                             | Notes                                            |
 | ------------------------------------------ | ----------------------------------------------- | ------------------------------------------------ |
 | Israeli Tax Authority (רשות המסים)         | https://www.misim.gov.il                        | Main portal for all tax filings                  |
-| Personal tax refund submission             | https://www.misim.gov.il/mhtova/                | Direct entry point for refund requests (החזר מס) |
-| Income tax portal (mas hakhnasa)           | https://www.misim.gov.il/emain/                 | Authenticated zone for income tax                |
+| Personal tax refund submission             | https://www.gov.il/he/service/itc135            | Direct entry point for refund requests (החזר מס) |
+| Income tax portal (mas hakhnasa)           | https://secapp.taxes.gov.il/SrRishum/           | Authenticated zone for income tax                |
 | National Insurance Institute (ביטוח לאומי) | https://www.btl.gov.il                          | Relevant for deductions and credits              |
 | Gov.il — tax refund guide                  | https://www.gov.il/he/service/income_tax_refund | Step-by-step citizen guide                       |
 
@@ -22,7 +22,7 @@ Links to learn about the refund process, the tax authority portal, and the under
 | ------------------------------------------------- | -------------------------------------------------------------- | ---------------------------------------------------- |
 | Who is entitled to a tax refund? (gov.il)         | https://www.gov.il/he/departments/guides/guide_tax_refund      | Eligibility criteria                                 |
 | Submitting a refund request — Tax Authority guide | https://taxes.gov.il/incometax/pages/individualstaxrefund.aspx | Official walkthrough                                 |
-| Form 106 (טופס 106) explained                     | https://www.misim.gov.il/mhtova/                               | Annual employer wage certificate required for filing |
+| Form 106 (טופס 106) explained                     | https://www.gov.il/he/service/itc135                           | Annual employer wage certificate required for filing |
 | Annual tax report for employees (דו"ח שנתי)       | https://www.gov.il/he/service/annual_tax_return_for_employee   | When and how employees file                          |
 | Rulebase for exempt income and deductions         | https://taxes.gov.il/incometax/pages/taxrates.aspx             | Tax brackets, credits, and exemptions                |
 
@@ -33,7 +33,7 @@ Links to learn about the refund process, the tax authority portal, and the under
 | Resource                                | URL                                                     | Notes                                        |
 | --------------------------------------- | ------------------------------------------------------- | -------------------------------------------- |
 | GovID / digital ID login (Gov.il login) | https://www.gov.il/he/departments/department/digital-id | Understand the OTP-based login used by misim |
-| Misim login page                        | https://www.misim.gov.il/login                          | Entry point Claude navigates to              |
+| Misim login page                        | https://secapp.taxes.gov.il/SrRishum/                   | Entry point Claude navigates to              |
 
 ---
 
@@ -52,9 +52,9 @@ Links to learn about the refund process, the tax authority portal, and the under
 
 | Resource                                         | URL                                  | Notes                                       |
 | ------------------------------------------------ | ------------------------------------ | ------------------------------------------- |
-| Fineapps — Israeli tax refund explainer (Hebrew) | https://fineapps.co.il/tax-refund/   | Popular consumer guide                      |
-| Mako Money — who should request a refund         | https://www.mako.co.il/finance-taxes | General audience articles on annual refunds |
-| Zap Finance refund calculator                    | https://finance.zap.co.il/taxes      | Estimate your expected refund               |
+| taxes-refund.co.il — Israeli tax refund guide (Hebrew) | https://taxes-refund.co.il/                                                                                       | Popular consumer guide                      |
+| Mako Money — who should request a refund               | https://www.mako.co.il/finances-money                                                                             | General audience articles on annual refunds |
+| taxes-refund.co.il refund simulator                    | https://taxes-refund.co.il/%D7%A1%D7%99%D7%9E%D7%95%D7%9C%D7%98%D7%95%D7%A8-%D7%94%D7%97%D7%96%D7%A8-%D7%9E%D7%A1-%D7%9E%D7%97%D7%A9%D7%91%D7%95%D7%9F-%D7%94%D7%97%D7%96%D7%A8-%D7%9E%D7%A1/ | Estimate your expected refund               |
 
 ---
 
