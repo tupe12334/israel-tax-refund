@@ -17,7 +17,14 @@
       "WebFetch(domain:docs.anthropic.com)",
       "Bash(ls *)",
       "mcp__claude_ai_Gmail__gmail_get_profile",
-      "mcp__claude_ai_Gmail__gmail_search_messages"
+      "mcp__claude_ai_Gmail__gmail_search_messages",
+      "mcp__playwright__browser_run_code",
+      "mcp__playwright__browser_navigate",
+      "mcp__playwright__browser_take_screenshot",
+      "mcp__playwright__browser_snapshot",
+      "mcp__playwright__browser_wait_for",
+      "mcp__playwright__browser_click",
+      "mcp__playwright__browser_select_option"
     ]
   }
 }
