@@ -3,7 +3,16 @@
     "allow": [
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(git status *)",
+      "WebSearch",
+      "WebFetch(domain:www.gov.il)",
+      "WebFetch(domain:www.paamonim.org)",
+      "WebFetch(domain:cpa-dray.com)",
+      "WebFetch(domain:taxsummaries.pwc.com)",
+      "WebFetch(domain:israeltaxcalculator.github.io)",
+      "WebFetch(domain:taxreturns.co.il)",
+      "WebFetch(domain:fionistdream.com)"
     ]
   }
 }
