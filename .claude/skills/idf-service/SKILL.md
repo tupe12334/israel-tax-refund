@@ -37,22 +37,74 @@ Also extract `TAX_YEAR` from the data file (or ask if no file exists). Store it 
 
 ---
 
-## STEP 2 — OPEN THE IDF PERSONAL PORTAL
+## PORTAL SELECTION — WHICH SITE TO USE
 
-Navigate to the IDF personal portal:
-```
-https://prat.idf.il
-```
+There are **two separate IDF portals**. Use the right one based on what you need:
 
-Take a screenshot to confirm the page loaded.
+| Goal | Portal | URL |
+|---|---|---|
+| Reserve duty pay (Form 3010) | אתר מילואים | `https://www.miluim.idf.il` |
+| Mandatory service discharge date | IDF Microsoft portal | `https://www.home.idf.il` |
 
-Tell the user:
-
-> "The IDF personal portal (פורטל האישי של צה"ל) is open in the browser.
+> **Important:** `home.idf.il` requires a Microsoft/IDF **password** (not SMS) — it uses Azure AD via `login.microsoftonline.com`. If the user doesn't have this password, fall back to PDF or manual entry (STEP 6).
 >
-> Please log in using your Israeli digital ID (תעודת זהות דיגיטלית / ביומטרית) or via SMS one-time password. Once you reach your personal dashboard, let me know and I'll continue automatically."
+> `miluim.idf.il` supports **SMS one-time code** login — no password needed. Use this portal to fetch Form 3010 (reserve duty income) and reserve service certificates.
 
-Wait for the user to confirm they are logged in before proceeding.
+---
+
+## STEP 2A — FETCH FORM 3010 (Reserve Duty Pay) via אתר מילואים
+
+This step retrieves reserve duty income for the tax year being filed.
+
+### 2A-1. Navigate and log in
+
+```
+https://www.miluim.idf.il/auth
+```
+
+The login page has two options — always use **"כניסה עם קוד חד פעמי"** (SMS one-time code):
+
+1. Enter the user's 9-digit Israeli ID in the "מספר ת"ז" field.
+2. Click **"כניסה עם קוד חד פעמי"**.
+3. On the next screen, set the **phone prefix** using the dropdown (e.g. `052`) — this is a separate combobox from the number field.
+4. Enter **only the 7-digit suffix** in the "טלפון נייד" field (e.g. for 052-3000346, enter `3000346`). Do NOT enter the full 10-digit number — the field will show "מספר התווים גדול מידי" (too many characters) if you do.
+5. Click **"קבלת קוד חד פעמי"** to send the SMS.
+6. Ask the user for the SMS code they received on their phone.
+7. Enter the code in the "סיסמה" (password) field and click **"כניסה לאתר"**.
+
+After login, the personal area is at `https://www.miluim.idf.il/personalzone`.
+
+### 2A-2. Generate Form 3010
+
+Navigate to: `https://www.miluim.idf.il/personalzone/milforms/form-3010`
+
+The form has two date fields in `DD.MM.YY` format:
+- "מתאריך" (from date): `01.01.<YY>` (e.g. `01.01.22` for 2022)
+- "עד לשנה" (to date): `31.12.<YY>` (e.g. `31.12.22` for 2022)
+
+Fill both fields and wait for results. If the page shows **"מצטערים, לא נמצאו תוצאות"** — the user had **no reserve duty in that year**. Record `reserve_duty: { income: 0, tax_withheld: 0 }`.
+
+If results exist, click **"הפקת טופס"** to generate the PDF and extract the income and tax withheld amounts.
+
+### 2A-3. Reserve service certificate (for tax credit evidence)
+
+The page `https://www.miluim.idf.il/miluim-forms/האישורים-שלי/` allows downloading "טופס אישור שירות מילואים מזכה". This is a formal certificate of qualifying reserve service — useful if reserve service tax credits apply (separate from the mandatory service credit).
+
+---
+
+## STEP 2B — FETCH MANDATORY SERVICE DISCHARGE DATE via home.idf.il
+
+Navigate to:
+```
+https://www.home.idf.il
+```
+
+This portal uses Microsoft/IDF authentication (Azure AD). The login flow:
+1. Enter `<id>@idf.il` in the username field.
+2. It redirects to `login.microsoftonline.com` — the user must enter their **IDF Microsoft password**.
+3. There is no SMS fallback on this portal — if the user doesn't have the password, skip to STEP 6 (PDF/manual).
+
+After login, look for a section with service history or discharge certificate under the personal area.
 
 ---
 
@@ -63,9 +115,9 @@ After the user confirms login:
 1. Take a screenshot to see the current state.
 2. Use the snapshot tool to get the page structure.
 3. Check whether the page shows a personal dashboard (not a login screen). Look for indicators like:
-   - The user's name or ID appearing on the page
-   - A menu or navigation area with sections like "תעודות", "שירות", "מסמכים"
-   - A welcome message ("שלום" + name)
+   - The user's name appearing on the page (e.g. "צהריים טובים אופק")
+   - A navigation menu with sections like "האישורים שלי", "בירורי שכר", "טופס 3010"
+   - A welcome message
 
 If still on a login/authentication page, tell the user and wait for confirmation again.
 
@@ -73,20 +125,21 @@ If still on a login/authentication page, tell the user and wait for confirmation
 
 ## STEP 4 — NAVIGATE TO SERVICE RECORD
 
-After confirming login, look for a section in the navigation that matches any of these:
+### On אתר מילואים (`miluim.idf.il`):
 
-| Hebrew label | English meaning |
-|---|---|
-| תעודות ומסמכים | Documents and Certificates |
-| אישורים | Confirmations |
-| שחרור | Discharge |
-| היסטוריית שירות | Service History |
-| אישור שירות | Service Confirmation |
-| מסמכי שירות | Service Documents |
+Available menu sections (via the side panel — click "הצג תפריט צד"):
+- **לאיזור האישי** → `/personalzone`
+- **דו"ח 1** → `/personalzone/milforms/Report1` (attendance report — not useful for discharge dates)
+- **מילג'ובס** → `/miljobs/`
+- **האישורים שלי** → `/miluim-forms/האישורים-שלי/` (reserve service certificates)
+- **סטטוס בקשות** → `/content-pages/requests-lobby/`
+- **טופס 3010** → `/miluim-forms/טופס-3010/` (reserve duty tax form)
 
-Use the snapshot to find the relevant link or button. Click it.
+> Note: אתר מילואים only contains **reserve duty** service data. Mandatory service (שירות חובה) discharge dates are NOT available here.
 
-If the portal shows a top navigation bar or sidebar, examine each section name. Prioritize any section that mentions "שירות" (service) or "תעודות" (certificates).
+### On `home.idf.il`:
+
+Look for sections related to "שחרור", "תעודות", or "היסטוריית שירות" in the personal dashboard.
 
 Take a screenshot after navigating to confirm you're in the right section.
 
