@@ -1,7 +1,7 @@
 ---
 name: hapoalim-import
 description: Uses Playwright to log in to Bank Hapoalim (בנק הפועלים) online banking and extract Form 867 (אישור ניכוי מס שנתי) data for a given tax year. Run this during the collect-info flow to auto-populate investment income fields. Requires the Playwright MCP server to be configured.
-allowed-tools: mcp__playwright__browser_navigate mcp__playwright__browser_snapshot mcp__playwright__browser_click mcp__playwright__browser_take_screenshot mcp__playwright__browser_run_code mcp__playwright__browser_select_option mcp__playwright__browser_type mcp__playwright__browser_fill_form mcp__playwright__browser_wait_for Write
+allowed-tools: mcp__playwright__browser_navigate mcp__playwright__browser_snapshot mcp__playwright__browser_click mcp__playwright__browser_take_screenshot mcp__playwright__browser_run_code mcp__playwright__browser_select_option mcp__playwright__browser_type mcp__playwright__browser_fill_form mcp__playwright__browser_wait_for Bash(mkdir *) Write
 ---
 
 You are an automation assistant that extracts Israeli tax data from Bank Hapoalim's (בנק הפועלים) online banking portal using Playwright.
@@ -118,48 +118,87 @@ async (page) => {
 
 ---
 
-## STEP 7 — READ THE RESULT
+## STEP 7 — READ THE RESULT & DOWNLOAD THE PDF
 
 Take a screenshot and read the result page (step 3 — סיום).
+
+### 7a — Extract text content
+
+Extract all text from the page:
+```js
+async (page) => {
+  return await page.evaluate(() => document.body.innerText);
+}
+```
 
 ### Case A — No tax events (zero income)
 
 The certificate text will contain:
 > "הריני לאשר כי לא חלו אירועי מס בחשבון ... בשנת {TAX_YEAR}. לפיכך לא נוכה מס בגין פעילות בחשבון זה."
 
-Extract using `browser_run_code`:
-```js
-async (page) => {
-  const text = await page.evaluate(() => document.body.innerText);
-  return text;
-}
-```
-
 If this message is present → **RESULT: no investment income for this year.**
 
 ### Case B — Tax was withheld (actual Form 867 data)
 
-The certificate will contain a table or structured text with fields such as:
-- **הכנסה חייבת** (taxable income) — may appear in a table row
+The certificate will contain fields such as:
+- **הכנסה חייבת** (taxable income)
 - **מס שנוכה / ניכוי מס במקור** (tax withheld at source)
-- **שם המוסד** (institution name — e.g., "בנק הפועלים")
 
-Extract all text from the certificate area:
+Parse for these values. If unclear, take a full-page screenshot and read it visually.
+
+### 7b — Download the PDF (ALWAYS, regardless of Case A or B)
+
+The result page shows a certificate preview with a PDF download button (📄 icon). Download it using Playwright's download event:
+
 ```js
 async (page) => {
-  // Try to get the certificate preview text
-  const certArea = await page.$('.certificate-content, .approval-content, [class*="certificate"], [class*="approval"]');
-  if (certArea) return await certArea.innerText();
-  // Fallback: full page text
-  return await page.evaluate(() => document.body.innerText);
+  const downloadDir = './data/{ID_NUMBER}';
+  const fileName = `867_{TAX_YEAR}.pdf`;
+
+  // Set up download listener BEFORE clicking
+  const downloadPromise = page.waitForEvent('download', { timeout: 15000 });
+
+  // Click the PDF download icon (first icon in the certificate toolbar)
+  const pdfBtn = await page.$('a[href*=".pdf"], button[aria-label*="הורד"], .pdf-icon, [data-cc*="pdf"]');
+  if (pdfBtn) {
+    await pdfBtn.click();
+  } else {
+    // Fallback: click the first icon in the certificate preview toolbar
+    await page.evaluate(() => {
+      const icons = document.querySelectorAll('.approval-preview button, .certificate-toolbar button, .doc-toolbar a');
+      if (icons[0]) icons[0].click();
+    });
+  }
+
+  try {
+    const download = await downloadPromise;
+    await download.saveAs(`${downloadDir}/${fileName}`);
+    return { saved: `${downloadDir}/${fileName}` };
+  } catch (e) {
+    return { error: 'Download timed out or no download triggered', message: String(e) };
+  }
 }
 ```
 
-Parse for:
-- **הכנסה חייבת**: look for a number near this label
-- **ניכוי מס במקור** or **מס שנוכה**: look for a number near this label
+If the download approach fails, try intercepting the PDF URL instead:
+```js
+async (page) => {
+  // Look for a direct PDF link in the page
+  const pdfUrl = await page.evaluate(() => {
+    const links = Array.from(document.querySelectorAll('a[href]'));
+    const pdfLink = links.find(a => a.href.includes('.pdf') || a.href.includes('download') || a.href.includes('print'));
+    return pdfLink ? pdfLink.href : null;
+  });
+  return pdfUrl;
+}
+```
 
-If the numbers are unclear from page text, take a full-page screenshot and read it visually.
+If a URL is found, use `page.goto(pdfUrl)` and capture the response, or instruct the user to save it manually.
+
+**After downloading:**
+1. Create the directory if needed: `mkdir -p ./data/{ID_NUMBER}`
+2. Confirm the file exists at `./data/{ID_NUMBER}/867_{TAX_YEAR}.pdf`
+3. Tell the user: "(saved: `./data/{ID_NUMBER}/867_{TAX_YEAR}.pdf`)"
 
 ---
 
@@ -186,6 +225,7 @@ BANK: בנק הפועלים (12)
 
 INVESTMENT_INCOME: NONE
 # Form 867 certified: no taxable events in {TAX_YEAR}
+DOCUMENT: ./data/{ID_NUMBER}/867_{TAX_YEAR}.pdf
 === HAPOALIM_IMPORT END ===
 ```
 
@@ -199,10 +239,13 @@ INVESTMENT_INCOME:
   - institution: בנק הפועלים
     income: {הכנסה חייבת}
     tax_withheld: {ניכוי מס במקור}
+DOCUMENT: ./data/{ID_NUMBER}/867_{TAX_YEAR}.pdf
 === HAPOALIM_IMPORT END ===
 ```
 
 Show the user a summary and ask them to confirm the extracted numbers before finishing.
+
+The `DOCUMENT` field records where the PDF was saved. This path is also added to the main `./data/{ID_NUMBER}.md` data file under the relevant employer/investment section for traceability.
 
 ---
 
