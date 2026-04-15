@@ -50,7 +50,14 @@
       "Bash(cp \"$HOME/Library/Messages/chat.db\" *)",
       "Bash(cp /tmp/_messages_otp* *)",
       "Write(/tmp/_sms_otp_extract.py)",
-      "Bash(rm -f /tmp/_sms_otp_extract.py *)"
+      "Bash(rm -f /tmp/_sms_otp_extract.py *)",
+      "mcp__plugin_playwright_playwright__browser_take_screenshot",
+      "mcp__plugin_playwright_playwright__browser_evaluate",
+      "Skill(miluim-import)",
+      "mcp__plugin_playwright_playwright__browser_select_option",
+      "mcp__plugin_playwright_playwright__browser_tabs",
+      "mcp__plugin_playwright_playwright__browser_press_key",
+      "mcp__plugin_playwright_playwright__browser_wait_for"
     ]
   }
 }
