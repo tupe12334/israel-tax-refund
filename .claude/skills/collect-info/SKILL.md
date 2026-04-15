@@ -23,6 +23,27 @@ Detect the user's language from their first message and respond entirely in that
 
 ---
 
+## STEP 0 — GMAIL PRE-FILL (OPTIONAL)
+
+**Before starting the interview**, ask the user once:
+
+> "Do you have a `GMAIL_PREFILL` block from running `/gmail-import`? If yes, paste it here and I'll use it to pre-fill the interview. Otherwise, type **skip** to start from scratch. (You can also run `/gmail-import` now in a separate window and paste the result back.)"
+
+### If the user types SKIP or has no block:
+Proceed directly to Step 1 with no pre-fill data.
+
+### If the user pastes a `=== GMAIL_PREFILL START === … === GMAIL_PREFILL END ===` block:
+Parse it and store the values as `PREFILL`. You will use these in Steps 1–9 below.
+
+### Using PREFILL data in the interview:
+Whenever you have a pre-filled value for a field, present it as the suggested answer rather than asking from scratch:
+
+> "From your Gmail import: Field 158 = ₪280,915. Is that correct? (Yes to accept, or type the correct value)"
+
+The user can confirm with "yes", or type a correction. This applies to all fields where a pre-filled value exists. Do **not** skip validation — validate all values including pre-filled ones.
+
+---
+
 ## SAVING
 
 After **every step** (1 through 9), immediately write the current collected data to disk:
