@@ -22,17 +22,17 @@ Detect the user's language from their first message and respond entirely in that
 
 ---
 
-## STEP 0 — GMAIL PRE-FILL (OPTIONAL)
+## STEP 0 — GMAIL PRE-FILL (AUTOMATIC)
 
-**Before starting the interview**, ask the user once:
+**Before starting the interview**, automatically run the `gmail-import` skill inline to scan Gmail for tax documents. Do NOT ask the user to run it separately or paste any block.
 
-> "Do you have a `GMAIL_PREFILL` block from running `/gmail-import`? If yes, paste it here and I'll use it to pre-fill the interview. Otherwise, type **skip** to start from scratch. (You can also run `/gmail-import` now in a separate window and paste the result back.)"
+If Gmail is connected (the `mcp__claude_ai_Gmail__gmail_get_profile` tool is available):
+- Run the full `gmail-import` flow silently for the requested `TAX_YEAR`.
+- Parse the resulting `GMAIL_PREFILL` block and store the values as `PREFILL`.
+- Tell the user: "I've scanned your Gmail and pre-filled what I could find. Let's verify each section now."
 
-### If the user types SKIP or has no block:
-Proceed directly to Step 1 with no pre-fill data.
-
-### If the user pastes a `=== GMAIL_PREFILL START === … === GMAIL_PREFILL END ===` block:
-Parse it and store the values as `PREFILL`. You will use these in Steps 1–9 below.
+If Gmail is not connected or the scan returns no results:
+- Proceed directly to Step 1 with no pre-fill data.
 
 ### Using PREFILL data in the interview:
 Whenever you have a pre-filled value for a field, present it as the suggested answer rather than asking from scratch:
@@ -143,7 +143,7 @@ Ask: "Did you receive any of the following payments from the National Insurance 
 Present as a checklist — collect for each applicable item:
 - **Unemployment benefits** (דמי אבטלה): taxable income received + income tax withheld
 - **Maternity/paternity leave** (דמי לידה): taxable income + income tax withheld
-- **Military reserve duty pay** (תגמולי מילואים): taxable income + income tax withheld
+- **Military reserve duty pay** (תגמולי מילואים): if the user had reserve duty, automatically run the `miluim-import` skill inline to fetch Form 3010 data from the Miluim portal. Do NOT ask the user to enter income/tax amounts manually — let the skill retrieve them. Only fall back to asking if the portal is unavailable.
 - **Work injury benefits** (דמי פגיעה בעבודה): taxable income + income tax withheld
 - **Other NII benefits**: describe + taxable income + tax withheld
 
@@ -187,7 +187,7 @@ Ask each of the following yes/no questions; collect details only when the answer
 
 ### 7c. Military / National Service (שירות צבאי / שירות לאומי)
 "Did you complete mandatory military or national service, and were you discharged within the past 3 years?"
-- If yes: discharge date (month + year), total service length in months.
+- If yes: automatically run the `idf-service` skill inline to fetch service dates from the IDF portal. Do NOT ask the user to enter dates manually — let the skill retrieve them. Only fall back to asking the user if the portal is unavailable and the skill could not obtain the data.
 
 ### 7d. Academic Degree (תואר אקדמי)
 "Did you complete a bachelor's degree, teaching certificate, or other recognized academic degree?"

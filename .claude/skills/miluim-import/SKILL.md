@@ -102,18 +102,20 @@ Click **"הפקת טופס"** to generate the PDF. Extract:
 
 ---
 
-## STEP 5 — RESERVE SERVICE CERTIFICATE (Optional)
+## STEP 5 — RESERVE SERVICE CERTIFICATE (Automatic)
 
-Offer to download the formal reserve service certificate:
+Automatically download the formal reserve service certificate — do not ask the user.
 
 Navigate to:
 ```
 https://www.miluim.idf.il/miluim-forms/האישורים-שלי/
 ```
 
-Ask: "Would you like to also download the reserve service certificate (אישור שירות מילואים מזכה)? It may be useful as evidence if reserve service tax credits apply."
+Click **"טופס אישור שירות מילואים מזכה"**, generate the PDF, and save it to `./data/<id>/miluim_service_certificate.pdf`.
 
-If yes, click **"טופס אישור שירות מילואים מזכה"**, generate the PDF, and save it to `./data/<id>/miluim_service_certificate.pdf`.
+Tell the user: "(אישור שירות מילואים מזכה saved to ./data/<id>/miluim_service_certificate.pdf)"
+
+If the certificate page is not found or the download fails, skip silently and continue to STEP 6 without blocking.
 
 ---
 

@@ -193,7 +193,7 @@ async (page) => {
 }
 ```
 
-If a URL is found, use `page.goto(pdfUrl)` and capture the response, or instruct the user to save it manually.
+If a URL is found, use `page.goto(pdfUrl)` to navigate to it and then trigger a download by using Playwright's download-event listener on the resulting page. If that also fails, take a full-page screenshot of the PDF for manual data extraction.
 
 **After downloading:**
 1. Create the directory if needed: `mkdir -p ./data/{ID_NUMBER}`

@@ -111,39 +111,42 @@ A success screen will appear: "הגשתך בוצעה בהצלחה" confirming th
 
 ---
 
-## STEP 5 — CONFIRM REQUEST STATUS
+## STEP 5 — CONFIRM REQUEST STATUS AND IMMEDIATELY CHECK FOR CERTIFICATE
 
 After submission, click "למעבר למעקב סטטוס הזמנה" or navigate to **"אישורים שלי"** in the top navigation.
 
 Click the **"סטטוס בקשות"** tab and confirm the request shows "1 אישורים בתהליך".
 
 Tell the user:
+> "✓ הבקשה הוגשה בהצלחה. אני בודק עכשיו אם האישור כבר זמין…"
 
-> "✓ הבקשה ל'אישור על מהלך שירות צבאי' (830) הוגשה בהצלחה ותישלח לאימייל שלך תוך שעתיים.
->
-> בזמן שהאישור מוכן, אוכל להמשיך עם נתונים ידניים — או שנמתין לאישור ונחלץ ממנו את התאריכים."
-
-Then **proceed to STEP 6** to wait for the certificate.
+Then **immediately proceed to STEP 6** — do not wait for the user to do anything.
 
 ---
 
-## STEP 6 — WAIT FOR CERTIFICATE AND EXTRACT DATES
+## STEP 6 — AUTOMATICALLY CHECK FOR CERTIFICATE AND EXTRACT DATES
 
-### Option A — Check Gmail (preferred)
-Use the Gmail MCP tool (`mcp__claude_ai_Gmail__gmail_search_messages`) to search for the certificate email:
+Run the following checks in order. Do NOT ask the user to check anything — do it yourself.
+
+### Check A — Gmail (run immediately)
+Use the Gmail MCP tool (`mcp__claude_ai_Gmail__gmail_search_messages`) to search for the certificate email right now:
 - Search query: `from:no-reply@idf.il אישור על מהלך שירות`
-- Or: `subject:אישור שירות צבאי`
+- Also try: `subject:אישור שירות צבאי`
 
-If found, read the email and/or download the PDF attachment. The certificate PDF contains:
+If found, read the email with `gmail_read_message` and extract the PDF attachment if present. The certificate PDF contains:
 - **תאריך גיוס** (induction date) — service start
 - **תאריך שחרור** (discharge date)
 - **סוג שירות** (service type)
 
-### Option B — Wait and re-check portal
-Navigate back to "אישורים שלי" → "אישורים שהתקבלו" tab. If the certificate now appears, there may be a download link. Click it to get the PDF.
+→ If data extracted: proceed to STEP 7.
 
-### Option C — Manual entry fallback
-If the certificate has not arrived yet, ask the user to enter their service dates manually and return to update them when the certificate arrives:
+### Check B — Portal "אישורים שהתקבלו" tab (run if Check A found nothing)
+Navigate back to "אישורים שלי" → tab **"אישורים שהתקבלו"**. Inspect the list — if certificate #830 appears, click its download link and extract the dates from the PDF.
+
+→ If data extracted: proceed to STEP 7.
+
+### Check C — Manual entry fallback (only if both A and B found nothing)
+The certificate has not arrived yet (it may take up to 2 hours). Ask the user to enter their service dates now, and note that the data can be refreshed later by re-running this skill:
 
 1. "When did you begin your military or national service? (MM/YYYY) — תאריך תחילת שירות"
 2. "When were you discharged? (MM/YYYY) — תאריך שחרור"
@@ -293,7 +296,7 @@ Tell the user:
 | Browser locked: "Browser is already in use" | Run `pkill -f "mcp-chrome" && sleep 2`, then retry navigation |
 | Portal requires re-login mid-session | Ask the user to re-authenticate in the browser and confirm when done |
 | Certificate not in popular list | Use the search box on the dashboard to search "830" or "מהלך שירות" |
-| Email not received after 2 hours | Check "אישורים שלי" → "סטטוס בקשות" for status; if failed, resubmit or fall back to manual entry |
+| Email not received after 2 hours | Navigate to "אישורים שלי" → "סטטוס בקשות" yourself and check the status; if the request shows as failed, resubmit automatically; if still pending, fall back to manual entry (Check C in STEP 6) |
 | Dates appear in Hebrew text (e.g., "1 במרץ 2020") | Parse month names: ינואר=01, פברואר=02, מרץ=03, אפריל=04, מאי=05, יוני=06, יולי=07, אוגוסט=08, ספטמבר=09, אוקטובר=10, נובמבר=11, דצמבר=12 |
 | User served in multiple roles (e.g., mandatory + career extension) | Ask for each period separately; use the mandatory service period for the tax credit calculation |
 | User did not serve (exempt / non-citizen at the time) | Set `military: { service_type: none }` in the data file — no extra credits apply |

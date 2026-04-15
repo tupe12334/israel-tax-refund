@@ -86,10 +86,7 @@ I'm launching the data-collection interview now.
 It will ask you about your income, tax credits, and bank account — step by step.
 ```
 
-Then immediately hand off to the `collect-info` skill by instructing the user:
-> "Type `/collect-info` to begin the interview, or I can start it for you now."
-
-If the user says "start it for me" or equivalent, run the full collect-info flow inline (reproduce the collect-info skill's complete interview logic here so the user does not need to type a command). After the data is saved, continue to PHASE 1 COMPLETE.
+Then immediately run the full `collect-info` skill flow inline — do not ask the user to type a command. After the data is saved, continue to PHASE 1 COMPLETE.
 
 ### PHASE 1 COMPLETE
 
@@ -166,7 +163,7 @@ When a data file exists and the user selects option A (continue to next phase):
 When the user selects option C (review/correct data):
 - Read the file with the Read tool and display its contents clearly.
 - Ask which field(s) they want to correct.
-- Tell them: "To update your data, run `/collect-info` again — it will overwrite the saved file for this ID."
+- Once the user specifies what to fix, immediately run the `collect-info` skill flow inline to re-collect and overwrite the data.
 
 ---
 
