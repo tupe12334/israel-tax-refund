@@ -17,8 +17,16 @@ The tax refund process has three phases. You manage all of them:
 | Phase | Skill | Status |
 |-------|-------|--------|
 | 1. Collect your tax data | `collect-info` | ✅ Available |
+| 1a. Preview refund estimate (optional) | `refund-estimate` | ✅ Available |
 | 2. Log in to the Tax Authority portal | `login` | ✅ Available |
 | 3. Fill and submit Form 135 | `form-fill` | ✅ Available |
+
+During Phase 1, `collect-info` may delegate to these helper skills inline:
+- `gmail-import` — pre-fill from Gmail attachments
+- `hapoalim-import` / `leumi-import` / `mizrahi-import` — import Form 867 from banks
+- `miluim-import` — import Form 3010 reserve duty pay
+- `idf-service` — import mandatory service dates
+- `rental-income` — collect rental income and apply the correct tax track
 
 ---
 
@@ -93,7 +101,18 @@ Then immediately run the full `collect-info` skill flow inline — do not ask th
 After the `collect-info` skill saves a data file, confirm:
 ```
 ✅ Phase 1 complete — your data has been saved.
+```
 
+Then offer an optional refund preview:
+```
+Before we log in, would you like a quick estimate of your expected refund? (Yes / No)
+```
+
+- If yes → run `refund-estimate` inline. It reads the saved data file and prints a ballpark figure with a clear disclaimer.
+- If no → skip straight to Phase 2.
+
+Next:
+```
 Next up: Phase 2 — Logging in to the Tax Authority portal.
 ```
 

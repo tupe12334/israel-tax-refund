@@ -157,14 +157,47 @@ Present as a checklist — collect for each applicable item:
 
 Ask: "Do you have income from bank savings, investments, or capital markets?"
 
-If yes, for **each financial institution** (bank, broker):
+If yes, ask: "Which banks/brokers do you hold accounts with? (e.g., Hapoalim, Leumi, Mizrahi-Tefahot, Discount, IBI, Meitav…)"
+
+### 6a — Automatic import via Playwright (preferred)
+
+For each institution the user names, check if a matching import skill exists and offer to use it:
+
+| Institution | Skill | Automatic import |
+|---|---|---|
+| Bank Hapoalim (בנק הפועלים) | `hapoalim-import` | Yes |
+| Bank Leumi (בנק לאומי) | `leumi-import` | Yes |
+| Bank Mizrahi-Tefahot (בנק מזרחי-טפחות) | `mizrahi-import` | Yes |
+| Others (Discount, IBI, Meitav, foreign brokers, …) | — | Manual entry |
+
+For each supported bank, ask: "I can log in to [bank name] via Playwright and pull your Form 867 automatically. Would you like to try that? (Yes / No — I'll enter it manually)"
+
+- If **yes** → run the matching `<bank>-import` skill inline, passing `TAX_YEAR`. Parse the returned `*_IMPORT` block and merge the values into `INVESTMENT_INCOME`. Also record the saved PDF path in the `DOCUMENT` field.
+- If **no** or the import fails → fall back to manual entry (Step 6b).
+
+### 6b — Manual entry (fallback, or for unsupported institutions)
+
+For **each financial institution** that was not imported automatically:
 - Institution name
 - Taxable income (from Form 867 field "הכנסה חייבת")
 - Income tax withheld at source
 
-> "Form 867 is an annual tax certificate from your bank or investment broker."
+> "Form 867 is an annual tax certificate from your bank or investment broker. It is usually available in your online banking under 'אישורים ודוחות' → 'אישור מס שנתי'."
 
-**After this step:** update the file with `INVESTMENT_INCOME`.
+**After this step:** update the file with `INVESTMENT_INCOME` (list of institutions — automatic + manual combined).
+
+---
+
+## STEP 6b — RENTAL INCOME (Form 901 / טופס 901)
+
+Ask: "Did you receive rental income during [tax year] from any property you own?"
+
+- If **no** → skip this step.
+- If **yes** → run the `rental-income` skill inline to collect per-property details, choose the tax track (exemption / 10% / regular), and record the taxable amount. The skill will write a `RENTAL_INCOME` block to the data file.
+
+> "Israeli tax law offers three tracks for residential rental income — full exemption up to the monthly ceiling, a 10% flat tax on gross rent, or the regular marginal-rate track with expense deductions. The `rental-income` skill will walk you through choosing the best one."
+
+**After this step:** update the file with `RENTAL_INCOME` (if applicable).
 
 ---
 
@@ -290,6 +323,33 @@ INVESTMENT_INCOME:
   - institution: <name>
     income: <amount>
     tax_withheld: <amount>
+    document: <optional PDF path from automatic import>
+
+RENTAL_INCOME:
+  properties:
+    - index: 1
+      type: <residential|commercial>
+      address: <street, city>
+      months_rented: <1-12>
+      monthly_rent: <amount>
+      gross_annual_rent: <amount>
+      ownership_share: <0..1>
+      track: <exemption|10%|regular>
+      # Exemption track:
+      taxable_amount_annual: <amount>
+      # 10% track:
+      tax_due: <amount>
+      paid_on_time: <true|false>
+      # Regular track:
+      expenses:
+        mortgage_interest: <amount>
+        arnona: <amount>
+        maintenance: <amount>
+        repairs: <amount>
+        insurance: <amount>
+        depreciation: <amount>
+        other: <amount>
+      net_rental_income: <amount>
 
 TAX_CREDITS:
   children:
@@ -320,6 +380,12 @@ BANK:
 ```
 
 After the user confirms, do a final write of the complete summary to `./data/<id_number>.md` (overwriting the incremental saves with the confirmed, final version).
+
+Then offer a refund estimate:
+> "Would you like me to compute an approximate refund estimate based on the data we just collected? (Yes / No — it's just a ballpark figure, not the official calculation)"
+
+- If yes → run the `refund-estimate` skill inline. It will read `./data/<id_number>.md` and print a breakdown with the estimated refund. The estimate is appended to the same data file under a `REFUND_ESTIMATE` section.
+- If no → skip.
 
 Tell the user: "Great — your information has been saved to `./data/<id_number>.md`. You can now run the login skill to begin the submission."
 
