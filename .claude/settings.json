@@ -15,7 +15,9 @@
       "WebFetch(domain:fionistdream.com)",
       "Bash(git commit *)",
       "WebFetch(domain:docs.anthropic.com)",
-      "Bash(ls *)"
+      "Bash(ls *)",
+      "mcp__claude_ai_Gmail__gmail_get_profile",
+      "mcp__claude_ai_Gmail__gmail_search_messages"
     ]
   }
 }
