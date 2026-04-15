@@ -60,14 +60,17 @@ Take a screenshot. The page should show "ברוכים הבאים לאתר איש
 - **הזדהות לאומית** — national digital ID (biometric)
 - **הזדהות דרך משתמש MyIdf** — MyIDF username + password
 
+**Always use the MyIDF login option.** Click the **"הזדהות דרך משתמש MyIdf"** button automatically — do not ask the user to choose.
+
+After clicking, take a screenshot to confirm the MyIDF login page loaded (it should show a username/password form or redirect to `my.idf.il` for authentication).
+
 Tell the user:
 
-> "פורטל האישורים של צה\"ל פתוח בדפדפן.
+> "פורטל האישורים של צה\"ל פתוח — לחצתי על **הזדהות דרך משתמש MyIdf** אוטומטית.
 >
-> אנא התחבר/י באמצעות **הזדהות דרך משתמש MyIdf** (שם משתמש וסיסמה) או **הזדהות לאומית** (תעודת זהות דיגיטלית/ביומטרית).
-> לאחר שמגיעים לדשבורד, תודיע/י לי ואמשיך אוטומטית."
+> אנא הזן/י שם משתמש וסיסמה ב-MyIDF. לאחר שמגיעים לדשבורד, תודיע/י לי ואמשיך אוטומטית."
 >
-> (English: "The IDF Certificates Portal is open. Please log in using **MyIDF** or **national digital ID**. Let me know when you reach the dashboard.")
+> (English: "The IDF Certificates Portal is open — I've clicked **MyIDF login** automatically. Please enter your MyIDF username and password. Let me know when you reach the dashboard.")
 
 Wait for user to confirm login.
 
