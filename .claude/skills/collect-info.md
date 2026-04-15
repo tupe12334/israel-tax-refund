@@ -249,7 +249,25 @@ BANK:
 === END OF SUMMARY ===
 ```
 
-After the user confirms, say: "Great — all information is saved. You can now run the login skill to begin the submission."
+After the user confirms, save the collected data to a markdown file using the Write tool:
+
+- File path: `./data/<id_number>.md` (use the filer's 9-digit Israeli ID as the filename)
+- File content: the full structured summary block above, wrapped in a markdown code fence labeled `tax-data`
+
+Example file content:
+```markdown
+# Tax Refund Data — <full name>
+
+```tax-data
+=== TAX REFUND DATA SUMMARY ===
+... (the complete summary)
+=== END OF SUMMARY ===
+```
+```
+
+Create the `./data/` directory if it does not exist (use a Bash `mkdir -p ./data` call before writing).
+
+After saving, tell the user: "Great — your information has been saved to `./data/<id_number>.md`. You can now run the login skill to begin the submission."
 
 ---
 
