@@ -62,15 +62,28 @@ Take a screenshot. The page should show "ברוכים הבאים לאתר איש
 
 **Always use the MyIDF login option.** Click the **"הזדהות דרך משתמש MyIdf"** button automatically — do not ask the user to choose.
 
-After clicking, take a screenshot to confirm the MyIDF login page loaded (it should show a username/password form or redirect to `my.idf.il` for authentication).
+After clicking, take a screenshot to confirm the MyIDF login page loaded (it should show a username/email field and a phone/password field).
+
+### Auto-fill credentials
+
+Read the user's data file at `./data/<id>.md` to get:
+- `PERSONAL.id` → used to form the MyIDF email: `<id>@idf.il`
+
+Run the `chrome-credentials` skill to retrieve the saved password for `my.idf.il` (or `idf.il`).
+
+Once the MyIDF login form is visible:
+1. Fill the **email / username field** with `<id>@idf.il` (e.g., `318828860@idf.il`).
+2. Fill the **password field** with the password retrieved from `chrome-credentials`.
+3. Take a screenshot to verify the fields are populated.
+4. Do **not** submit yet — tell the user to complete any remaining steps (OTP, captcha) themselves.
 
 Tell the user:
 
-> "פורטל האישורים של צה\"ל פתוח — לחצתי על **הזדהות דרך משתמש MyIdf** אוטומטית.
+> "פורטל האישורים של צה\"ל פתוח — לחצתי על **הזדהות דרך משתמש MyIdf** ומילאתי אוטומטית את כתובת המייל והסיסמה.
 >
-> אנא הזן/י שם משתמש וסיסמה ב-MyIDF. לאחר שמגיעים לדשבורד, תודיע/י לי ואמשיך אוטומטית."
+> אנא השלם/י את ההתחברות (קוד אימות / OTP) ולאחר שמגיעים לדשבורד, תודיע/י לי ואמשיך אוטומטית."
 >
-> (English: "The IDF Certificates Portal is open — I've clicked **MyIDF login** automatically. Please enter your MyIDF username and password. Let me know when you reach the dashboard.")
+> (English: "The IDF Certificates Portal is open — I've clicked **MyIDF login** and pre-filled your email and password. Please complete login (OTP / captcha). Let me know when you reach the dashboard.")
 
 Wait for user to confirm login.
 
