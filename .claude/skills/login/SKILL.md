@@ -103,10 +103,21 @@ If the user explicitly asks you to type the ID for them and pastes the 9-digit n
 After credentials are submitted, the portal sends an OTP to the phone number registered on the user's ID.
 
 1. Take a snapshot to confirm an OTP prompt is visible.
-2. Tell the user:
-   > "An OTP was sent to the phone number registered on your ID. Please enter the code in the browser window when it arrives."
-3. Update session state to `awaiting-otp`.
-4. Wait for the user to confirm they've entered the OTP.
+2. Update session state to `awaiting-otp`.
+3. **Try to auto-read the OTP from Messages.app** — run the `sms-otp` skill:
+   ```
+   Skill(sms-otp) --service misim --minutes 10
+   ```
+   - If `sms-otp` returns a code in the `=== SMS_OTP START ===` block:
+     - Extract the `code:` value.
+     - Type it directly into the OTP field using `mcp__playwright__browser_type`.
+     - Take a screenshot to confirm it was entered.
+     - Tell the user: "I found your OTP in Messages.app and entered it automatically."
+     - Proceed to Step 4.
+   - If `sms-otp` returns no result (empty, access denied, or no recent message):
+     - Tell the user:
+       > "An OTP was sent to the phone number registered on your ID. Please enter the code in the browser window when it arrives."
+     - Wait for the user to confirm they've entered the OTP.
 
 If no OTP arrives within a few minutes, suggest:
 - Check the phone number on file at https://www.misim.gov.il.

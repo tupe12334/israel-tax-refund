@@ -42,7 +42,15 @@
       "mcp__plugin_playwright_playwright__browser_navigate",
       "mcp__plugin_playwright_playwright__browser_snapshot",
       "mcp__plugin_playwright_playwright__browser_click",
-      "mcp__plugin_playwright_playwright__browser_type"
+      "mcp__plugin_playwright_playwright__browser_type",
+      "Bash(sqlite3 *)",
+      "Bash(osascript -e ' *)",
+      "Bash(osascript *)",
+      "Skill(sms-otp)",
+      "Bash(cp \"$HOME/Library/Messages/chat.db\" *)",
+      "Bash(cp /tmp/_messages_otp* *)",
+      "Write(/tmp/_sms_otp_extract.py)",
+      "Bash(rm -f /tmp/_sms_otp_extract.py *)"
     ]
   }
 }
