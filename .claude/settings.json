@@ -29,7 +29,9 @@
       "Skill(collect-info)",
       "mcp__playwright__browser_fill_form",
       "mcp__playwright__browser_type",
-      "Skill(idf-service)"
+      "Skill(idf-service)",
+      "Skill(login)",
+      "Skill(form-fill)"
     ]
   }
 }

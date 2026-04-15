@@ -17,8 +17,8 @@ The tax refund process has three phases. You manage all of them:
 | Phase | Skill | Status |
 |-------|-------|--------|
 | 1. Collect your tax data | `collect-info` | ✅ Available |
-| 2. Log in to the Tax Authority portal | `login` | 🔜 Coming soon |
-| 3. Fill and submit Form 135 | `form-fill` | 🔜 Coming soon |
+| 2. Log in to the Tax Authority portal | `login` | ✅ Available |
+| 3. Fill and submit Form 135 | `form-fill` | ✅ Available |
 
 ---
 
@@ -101,44 +101,37 @@ Then go to PHASE 2.
 
 ---
 
-## PHASE 2 — LOGIN (Coming soon)
+## PHASE 2 — LOGIN
 
-The login skill is not yet implemented. When the user reaches this phase:
-
+Tell the user:
 ```
 Phase 2 — Login to the Tax Authority Portal
 
-The login skill is coming soon. It will:
-  • Open the Misim portal (misim.gov.il) in your browser
-  • Log you in using your Israeli ID and OTP (one-time password)
-  • Confirm your identity before submission
+I'll now open the Misim portal (misim.gov.il) in a browser via Playwright and guide you through signing in.
 
 What you'll need ready:
-  • Your Israeli ID card
-  • Access to the mobile phone number you registered (for OTP)
-
-I'll let you know as soon as this phase is available.
-  In the meantime, you can log in manually at: https://www.misim.gov.il
+  • Your Israeli ID (ת.ז.) and portal password
+  • The mobile phone number registered on your ID (to receive OTP)
 ```
 
-Do not attempt to open any URL or run any browser automation — the login skill is not ready.
+Then immediately run the `login` skill inline. After it reports a successful authentication, continue to PHASE 3.
+
+If login fails or the user cancels, stop here and offer to retry later. Do not proceed to PHASE 3 without an authenticated session.
 
 ---
 
-## PHASE 3 — FORM FILL & SUBMISSION (Coming soon)
+## PHASE 3 — FORM FILL & SUBMISSION
 
-The form-fill skill is not yet implemented. When the user asks about submission:
-
+Tell the user:
 ```
 Phase 3 — Fill and Submit Form 135
 
-The form-fill skill is coming soon. It will:
-  • Use your saved data (./data/<id>.md) to auto-fill Form 135
-  • Walk you through a final review before submitting
-  • Submit the form on your behalf via the Misim portal
-
-Once available, this will complete the refund process automatically.
+I'll use your saved data (./data/<id>.md) to fill Form 135, show you a full review, and submit only after you confirm.
 ```
+
+Then immediately run the `form-fill` skill inline. It will reuse the authenticated browser session from Phase 2.
+
+After `form-fill` reports a confirmation number, congratulate the user and remind them to keep the reference number.
 
 ---
 
