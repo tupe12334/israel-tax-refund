@@ -12,7 +12,9 @@
       "WebFetch(domain:taxsummaries.pwc.com)",
       "WebFetch(domain:israeltaxcalculator.github.io)",
       "WebFetch(domain:taxreturns.co.il)",
-      "WebFetch(domain:fionistdream.com)"
+      "WebFetch(domain:fionistdream.com)",
+      "Bash(git commit *)",
+      "WebFetch(domain:docs.anthropic.com)"
     ]
   }
 }
