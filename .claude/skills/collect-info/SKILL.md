@@ -1,7 +1,6 @@
 ---
 name: collect-info
 description: Guides the user through a step-by-step interview to gather all information needed to file an Israeli tax refund (החזר מס / Form 135). Use when the user wants to start a tax refund claim, collect their tax data, or fill in their Form 106 details.
-disable-model-invocation: true
 allowed-tools: Bash(mkdir *) Bash(cp *) Write
 ---
 
