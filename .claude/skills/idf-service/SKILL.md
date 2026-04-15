@@ -1,10 +1,10 @@
 ---
 name: idf-service
-description: Fetches IDF mandatory service record from the IDF personal portal (פורטל האישי של צה"ל) to extract service start and discharge dates, calculate total service length, and determine tax credit eligibility. Run during the collect-info flow to auto-populate the military service section (Step 7c). For reserve duty (מילואים) income, use the miluim-import skill instead.
-allowed-tools: mcp__playwright__browser_navigate mcp__playwright__browser_snapshot mcp__playwright__browser_click mcp__playwright__browser_take_screenshot mcp__playwright__browser_run_code mcp__playwright__browser_wait_for mcp__playwright__browser_type mcp__playwright__browser_close Bash(ls *) Bash(mkdir *) Read Write
+description: Fetches IDF mandatory service record from the IDF certificates portal (ishurim.prat.idf.il) to extract service start and discharge dates, calculate total service length, and determine tax credit eligibility. Run during the collect-info flow to auto-populate the military service section (Step 7c). For reserve duty (מילואים) income, use the miluim-import skill instead.
+allowed-tools: mcp__playwright__browser_navigate mcp__playwright__browser_snapshot mcp__playwright__browser_click mcp__playwright__browser_take_screenshot mcp__playwright__browser_run_code mcp__playwright__browser_wait_for mcp__playwright__browser_type mcp__playwright__browser_fill_form mcp__playwright__browser_close Bash(ls *) Bash(mkdir *) Read Write
 ---
 
-You are an automation assistant that fetches IDF mandatory service records from the IDF personal portal and calculates Israeli tax credit eligibility for veterans.
+You are an automation assistant that fetches IDF mandatory service records from the IDF certificates portal and calculates Israeli tax credit eligibility for veterans.
 
 Your goal: retrieve the user's service start date and discharge date, compute total months served, calculate the tax credit points they are entitled to for each tax year being filed, and update the tax refund data file.
 
@@ -24,6 +24,12 @@ Before starting, verify the Playwright MCP server is available by checking if `m
 > ```
 > Then restart Claude Code and try again."
 
+Also check if there is a lingering Playwright Chrome process that may block the browser. If `mcp__playwright__browser_navigate` fails with "Browser is already in use", run:
+```bash
+pkill -f "mcp-chrome" && sleep 2
+```
+Then retry navigation.
+
 ---
 
 ## STEP 1 — FIND EXISTING DATA
@@ -31,7 +37,7 @@ Before starting, verify the Playwright MCP server is available by checking if `m
 Read the `./data/` directory contents. Look for a file named `<id>.md` (excluding `draft.md`). If found, read it and check whether `TAX_CREDITS.military` is already populated (not `PENDING` and not empty).
 
 - **If already populated:** Show the existing data to the user and ask: "Military service data already exists — would you like to keep it or refresh it from the IDF portal?"
-  - If keep → skip to STEP 8 and output the existing data.
+  - If keep → skip to STEP 9 and output the existing data.
   - If refresh → continue to STEP 2.
 - **If not populated or file not found:** Continue to STEP 2.
 
@@ -39,19 +45,31 @@ Also extract `TAX_YEAR` from the data file (or ask if no file exists). Store it 
 
 ---
 
-## STEP 2 — FETCH MANDATORY SERVICE DISCHARGE DATE via home.idf.il
+## STEP 2 — OPEN THE IDF CERTIFICATES PORTAL
+
+> **IMPORTANT:** Do NOT navigate to `prat.idf.il` (redirects to `home.idf.il` — for active soldiers only, veterans get "אין גישה").
+> Do NOT navigate to `home.idf.il` or `my.idf.il`.
+> The correct portal for all discharged veterans is: **`https://ishurim.prat.idf.il`**
 
 Navigate to:
 ```
-https://www.home.idf.il
+https://ishurim.prat.idf.il
 ```
 
-This portal uses Microsoft/IDF authentication (Azure AD). The login flow:
-1. Enter `<id>@idf.il` in the username field.
-2. It redirects to `login.microsoftonline.com` — the user must enter their **IDF Microsoft password**.
-3. There is no SMS fallback on this portal — if the user doesn't have the password, skip to STEP 6 (PDF/manual).
+Take a screenshot. The page should show "ברוכים הבאים לאתר אישורים" with two login buttons:
+- **הזדהות לאומית** — national digital ID (biometric)
+- **הזדהות דרך משתמש MyIdf** — MyIDF username + password
 
-After login, look for a section with service history or discharge certificate under the personal area.
+Tell the user:
+
+> "פורטל האישורים של צה\"ל פתוח בדפדפן.
+>
+> אנא התחבר/י באמצעות **הזדהות דרך משתמש MyIdf** (שם משתמש וסיסמה) או **הזדהות לאומית** (תעודת זהות דיגיטלית/ביומטרית).
+> לאחר שמגיעים לדשבורד, תודיע/י לי ואמשיך אוטומטית."
+>
+> (English: "The IDF Certificates Portal is open. Please log in using **MyIDF** or **national digital ID**. Let me know when you reach the dashboard.")
+
+Wait for user to confirm login.
 
 ---
 
@@ -59,74 +77,73 @@ After login, look for a section with service history or discharge certificate un
 
 After the user confirms login:
 
-1. Take a screenshot to see the current state.
-2. Use the snapshot tool to get the page structure.
-3. Check whether the page shows a personal dashboard (not a login screen). Look for indicators like:
-   - The user's name appearing on the page (e.g. "צהריים טובים אופק")
-   - A navigation menu with sections like "תעודות", "שחרור", "היסטוריית שירות"
-   - A welcome message
+1. Take a screenshot.
+2. Take a snapshot to inspect the page.
+3. Confirm you're on the dashboard — look for:
+   - Page title "בית" and URL containing `ishurim.prat.idf.il/ords/r/hr/ishurim/`
+   - The user's name in the top navigation (e.g., "אופק גבאי")
+   - A search box labeled "חיפוש אישור"
+   - A section "אישורים פופולרים" with certificate cards
 
-If still on a login/authentication page, tell the user and wait for confirmation again.
-
----
-
-## STEP 4 — NAVIGATE TO SERVICE RECORD
-
-Look for sections related to "שחרור", "תעודות", or "היסטוריית שירות" in the personal dashboard.
-
-Take a screenshot after navigating to confirm you're in the right section.
+If still on the login page, tell the user and wait for another confirmation.
 
 ---
 
-## STEP 5 — EXTRACT SERVICE DATES
+## STEP 4 — REQUEST SERVICE CERTIFICATE
 
-Take a snapshot of the service record page. Look for a table, card, or text block showing:
+On the dashboard you should see "אישורים פופולרים" listing several certificates. Look for:
 
-| Hebrew label | What to extract |
-|---|---|
-| תאריך גיוס | Service start date (induction) |
-| תאריך שחרור | Discharge date |
-| תאריך תחילת שירות | Alternative label for service start |
-| סוג שירות | Service type (חובה / קבע / לאומי) |
-| תקופת שירות | Total service period |
+**"אישור על מהלך שירות צבאי (830)"**
 
-Extract these values. Dates may appear in DD/MM/YYYY or MM/YYYY format — normalize all to MM/YYYY.
+This is certificate #830 (internal cert_id 6743). It contains induction date (תאריך גיוס), discharge date (תאריך שחרור), service type, and units.
 
-If the page shows a form to **generate** an "אישור שירות" document (a common flow on the portal), generate it by clicking the relevant button, then read the resulting certificate text.
+Click the **"להגשה"** link next to this certificate. A modal dialog will appear titled "הגשת בקשה לקבלת אישור".
 
-### Extracting text from the page
+If the certificate is not visible in the popular list, use the search box to search for "830" or "מהלך שירות".
 
-```js
-async (page) => {
-  return await page.evaluate(() => document.body.innerText);
-}
-```
+### In the request modal:
+1. The certificate "אישור על מהלך שירות צבאי (830)" should already be selected.
+2. Fill in the email field **"כתובת המייל לשליחת אישורים"** with the user's email address.
+   - Use the email from the data file if available, otherwise ask the user.
+3. Click **"שליחת בקשות (1)"**.
 
-Parse the returned text for any date patterns (e.g., `01/03/2020`, `מרץ 2020`, `03/2020`) adjacent to the Hebrew labels above.
-
-If found, store:
-- `SERVICE_START`: MM/YYYY (induction date)
-- `DISCHARGE_DATE`: MM/YYYY (discharge date)
-- `SERVICE_TYPE`: `mandatory` (חובה), `national` (לאומי), or `career` (קבע)
-
-If dates are **not found** on this page, try taking a full-page screenshot and reading it visually. If still unclear, proceed to STEP 6 (PDF fallback).
+A success screen will appear: "הגשתך בוצעה בהצלחה" confirming the request was submitted. The certificate will be sent to email **within 2 hours** and will also appear under "אישורים שלי".
 
 ---
 
-## STEP 6 — PDF FALLBACK: DISCHARGE CERTIFICATE
+## STEP 5 — CONFIRM REQUEST STATUS
 
-If the portal navigation failed or dates could not be extracted automatically, offer two alternatives:
+After submission, click "למעבר למעקב סטטוס הזמנה" or navigate to **"אישורים שלי"** in the top navigation.
 
-### Option A — Upload your discharge certificate (תעודת שחרור)
-Ask: "Please provide the path to your discharge certificate PDF (תעודת שחרור). It usually contains your service dates on page 1."
+Click the **"סטטוס בקשות"** tab and confirm the request shows "1 אישורים בתהליך".
 
-If the user provides a path:
-1. Read the file using the Read tool (Claude can parse PDF content visually).
-2. Look for: date of induction (תאריך גיוס), date of discharge (תאריך שחרור), service type.
-3. Save the PDF to `./data/<id>/idf_discharge_certificate.pdf` using Bash cp.
+Tell the user:
 
-### Option B — Manual entry
-If no PDF is available, ask the user directly:
+> "✓ הבקשה ל'אישור על מהלך שירות צבאי' (830) הוגשה בהצלחה ותישלח לאימייל שלך תוך שעתיים.
+>
+> בזמן שהאישור מוכן, אוכל להמשיך עם נתונים ידניים — או שנמתין לאישור ונחלץ ממנו את התאריכים."
+
+Then **proceed to STEP 6** to wait for the certificate.
+
+---
+
+## STEP 6 — WAIT FOR CERTIFICATE AND EXTRACT DATES
+
+### Option A — Check Gmail (preferred)
+Use the Gmail MCP tool (`mcp__claude_ai_Gmail__gmail_search_messages`) to search for the certificate email:
+- Search query: `from:no-reply@idf.il אישור על מהלך שירות`
+- Or: `subject:אישור שירות צבאי`
+
+If found, read the email and/or download the PDF attachment. The certificate PDF contains:
+- **תאריך גיוס** (induction date) — service start
+- **תאריך שחרור** (discharge date)
+- **סוג שירות** (service type)
+
+### Option B — Wait and re-check portal
+Navigate back to "אישורים שלי" → "אישורים שהתקבלו" tab. If the certificate now appears, there may be a download link. Click it to get the PDF.
+
+### Option C — Manual entry fallback
+If the certificate has not arrived yet, ask the user to enter their service dates manually and return to update them when the certificate arrives:
 
 1. "When did you begin your military or national service? (MM/YYYY) — תאריך תחילת שירות"
 2. "When were you discharged? (MM/YYYY) — תאריך שחרור"
@@ -136,10 +153,10 @@ If no PDF is available, ask the user directly:
 - Both dates must be valid MM/YYYY format.
 - Discharge date must be after service start date.
 - Service start must not be before 01/1948 or in the future.
-- Service length (months between dates) must be between 12 and 60 for typical mandatory service.
-- If the computed service length seems unusual (e.g., under 18 months for a man, over 48 months), flag it: "That's [N] months — does that sound right?" Do not block — accept the user's confirmation.
+- Service length (months) must be between 12 and 60 for typical mandatory service.
+- If computed service length seems unusual, flag it: "That's [N] months — does that sound right?" Do not block — accept user's confirmation.
 
-**Save immediately** after each answer (do not wait until all three are collected).
+**Save immediately** after each answer.
 
 ---
 
@@ -272,13 +289,33 @@ Tell the user:
 
 | Situation | Action |
 |---|---|
-| Portal unavailable or redirected elsewhere | Report the URL you landed on, offer fallback to PDF or manual entry |
-| Authentication fails / OTP required | Guide the user through OTP in the browser, wait for confirmation |
-| Service record section not found in portal | Take a screenshot, describe what sections are visible, ask user to navigate manually and describe what they see |
+| Navigating to `prat.idf.il` redirects to `home.idf.il` with "אין גישה" | This is the **active soldiers** portal — ignore it. Navigate to `ishurim.prat.idf.il` instead |
+| Browser locked: "Browser is already in use" | Run `pkill -f "mcp-chrome" && sleep 2`, then retry navigation |
+| Portal requires re-login mid-session | Ask the user to re-authenticate in the browser and confirm when done |
+| Certificate not in popular list | Use the search box on the dashboard to search "830" or "מהלך שירות" |
+| Email not received after 2 hours | Check "אישורים שלי" → "סטטוס בקשות" for status; if failed, resubmit or fall back to manual entry |
 | Dates appear in Hebrew text (e.g., "1 במרץ 2020") | Parse month names: ינואר=01, פברואר=02, מרץ=03, אפריל=04, מאי=05, יוני=06, יולי=07, אוגוסט=08, ספטמבר=09, אוקטובר=10, נובמבר=11, דצמבר=12 |
 | User served in multiple roles (e.g., mandatory + career extension) | Ask for each period separately; use the mandatory service period for the tax credit calculation |
 | User did not serve (exempt / non-citizen at the time) | Set `military: { service_type: none }` in the data file — no extra credits apply |
-| Portal requires re-login mid-session | Ask the user to re-authenticate in the browser and confirm when done |
+
+---
+
+## PORTAL REFERENCE
+
+| URL | Purpose |
+|---|---|
+| `https://ishurim.prat.idf.il` | **Certificates portal** — correct entry point for all users including veterans |
+| `https://www.home.idf.il` | Active soldiers only (צ360) — veterans get "אין גישה", do not use |
+| `https://www.prat.idf.il` | Redirects to `home.idf.il` — do not use for veterans |
+| `https://my.idf.il` | MyIDF account management — used for login credentials only |
+| `https://www.miluim.idf.il` | Reserve duty portal — use `miluim-import` skill for this |
+
+### Certificate #830 details
+- Name: **אישור על מהלך שירות צבאי**
+- Internal cert_id: `6743`
+- Contains: induction date, discharge date, service type, units served
+- Delivery: emailed as PDF within 2 hours of request
+- Monthly quota: 8 requests per month
 
 ---
 
