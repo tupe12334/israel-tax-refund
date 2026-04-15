@@ -1,5 +1,7 @@
 # Israel Tax Refund — AI-Assisted Filing
 
+> **Hebrew supported** — If you speak Hebrew, Claude will respond in Hebrew. See also: [README בעברית](README.he.md)
+
 An agentic Claude Code workspace that automates the Israeli tax refund process. Clone the repo, open a Claude session, and let Claude navigate the tax authority website on your behalf using Playwright.
 
 ## How It Works
