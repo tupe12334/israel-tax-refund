@@ -90,7 +90,25 @@ Then immediately run the full `collect-info` skill flow inline — do not ask th
 
 ### PHASE 1 COMPLETE
 
-After the `collect-info` skill saves a data file, confirm:
+After the `collect-info` skill saves a data file, read the file and validate it contains **all required fields** before continuing:
+
+**Required fields (must be non-empty):**
+- `id` — Israeli ID number
+- `name` — Full name
+- `tax_year` — Tax year
+- `bank_account` — Bank account details (bank, branch, account number)
+- At least one income source (Form 106 / employment income OR other income)
+
+If **any required field is missing or empty**, do NOT proceed to Phase 2. Instead:
+```
+⚠️  Some required information is missing before we can continue:
+
+  • <list each missing field clearly>
+
+Please provide the missing details so we can complete your refund application.
+```
+Then re-run the relevant portion of `collect-info` inline to fill the gaps. Only after all required fields are present, confirm:
+
 ```
 ✅ Phase 1 complete — your data has been saved.
 
@@ -113,6 +131,8 @@ What you'll need ready:
   • Your Israeli ID (ת.ז.) and portal password
   • The mobile phone number registered on your ID (to receive OTP)
 ```
+
+Before running the `login` skill, re-read the data file and verify all required fields are present (same check as PHASE 1 COMPLETE). If anything is missing, stop and direct the user back to Phase 1 to complete their data.
 
 Then immediately run the `login` skill inline. After it reports a successful authentication, continue to PHASE 3.
 
