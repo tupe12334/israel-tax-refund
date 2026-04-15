@@ -31,7 +31,13 @@
       "mcp__playwright__browser_type",
       "Skill(idf-service)",
       "Skill(login)",
-      "Skill(form-fill)"
+      "Skill(form-fill)",
+      "Skill(gmail-import)",
+      "mcp__claude_ai_Gmail__gmail_read_message",
+      "Skill(chrome-credentials)",
+      "Bash(python3 *)",
+      "Bash(rm -f /tmp/_chrome_creds_extract.py *)",
+      "Write(/tmp/_chrome_creds_extract.py)"
     ]
   }
 }
