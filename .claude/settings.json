@@ -35,9 +35,14 @@
       "Skill(gmail-import)",
       "mcp__claude_ai_Gmail__gmail_read_message",
       "Skill(chrome-credentials)",
+      "Skill(form106-import)",
       "Bash(python3 *)",
       "Bash(rm -f /tmp/_chrome_creds_extract.py *)",
-      "Write(/tmp/_chrome_creds_extract.py)"
+      "Write(/tmp/_chrome_creds_extract.py)",
+      "mcp__plugin_playwright_playwright__browser_navigate",
+      "mcp__plugin_playwright_playwright__browser_snapshot",
+      "mcp__plugin_playwright_playwright__browser_click",
+      "mcp__plugin_playwright_playwright__browser_type"
     ]
   }
 }
