@@ -70,14 +70,16 @@ Never write the ID number, password, or OTP into this file. Only the status and 
 
 ## STEP 1 — OPEN THE MISIM PORTAL
 
-1. Navigate to the Tax Authority portal:
+1. Navigate directly to the Tax Authority personal area login page:
    ```
-   https://www.misim.gov.il/
+   https://secapp.taxes.gov.il/SrSherutAtzmi
    ```
-2. Take a screenshot to confirm the page loaded.
-3. Take a page snapshot so you can find the "כניסה לאזור האישי" / "Personal Area Login" link.
-4. Click the login entry point for the personal area (הזדהות / כניסה / התחברות).
-5. Update session state to `portal-open`.
+   This redirects to `https://secapp.taxes.gov.il/taxes-login/login/general` — the correct login form with **מספר זהות** and **קוד משתמש קבוע** fields.
+
+   > **Note:** `https://www.misim.gov.il/` redirects to the gov.il landing page, not the login page — do NOT use it as the entry point.
+
+2. Take a screenshot to confirm the login form loaded.
+3. Update session state to `portal-open`.
 
 If the portal is unreachable (timeout, 5xx), tell the user to check their internet and try again. Do not retry silently more than twice.
 
