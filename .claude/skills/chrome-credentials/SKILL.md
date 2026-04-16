@@ -21,20 +21,24 @@ Detect the user's language and respond in it throughout.
 
 ## STEP 0 — DETERMINE TARGET DOMAINS
 
-If the user specified a domain or site (e.g., "get my Misim password"), extract the domain. Otherwise default to this list:
+Israeli government and bank portals often save login credentials under a URL that differs from the "logical" site name (e.g., Misim auth redirects to `secapp.taxes.gov.il` and `login.gov.il`). To avoid missing saved passwords, this skill expands each requested site to a list of URL substring patterns before querying Chrome's `Login Data`.
 
-```
-DEFAULT_DOMAINS = [
-  "misim.gov.il",
-  "idf.il",
-  "bankhapoalim.co.il",
-  "hapoalim.co.il",
-  "login.bankhapoalim.co.il",
-  "ecom.one-zero.io"
-]
-```
+### Site alias map
 
-Store as `DOMAINS` (a list of strings).
+| Logical site (input) | URL substring patterns to search |
+|---|---|
+| `misim.gov.il` | `misim.gov.il`, `secapp.taxes.gov.il`, `taxes.gov.il`, `login.gov.il`, `account.gov.il`, `shaam` |
+| `idf.il` | `idf.il`, `miluim.idf.il`, `ishurim.prat.idf.il`, `prat.idf.il` |
+| `bankhapoalim.co.il` | `bankhapoalim.co.il`, `hapoalim.co.il`, `login.bankhapoalim.co.il` |
+| `btl.gov.il` | `btl.gov.il`, `ps.btl.gov.il` |
+| `one-zero.io` | `one-zero.io`, `ecom.one-zero.io` |
+
+Resolution rules:
+1. If the user specified a site, look it up in the alias map and use the expanded pattern list as `DOMAINS`.
+2. If the requested site is not in the map, use it verbatim as a single-item pattern list (backward compatible).
+3. If the user did not specify a site, use the union of all patterns from every row of the alias map as `DOMAINS`.
+
+Store the resolved list as `DOMAINS` (a list of URL substring patterns). Each pattern will be used with a SQL `LIKE '%pattern%'` match against `origin_url`, so order and duplicates do not matter.
 
 ---
 
@@ -246,7 +250,7 @@ The script prints a JSON array. Parse it.
 | `No crypto library` | Show the pip install command again and stop. |
 
 **If an empty array `[]` is returned:**
-Tell the user no saved credentials were found for those domains in Chrome. They may need to save the passwords in Chrome first, or check a different profile.
+Before giving up, double-check the other Chrome profile(s) discovered in Step 2 — credentials are often saved in a single profile only. If both profiles return empty, run the script once more with a broader substring (e.g., `gov.il` for government sites, `bank` for bank sites) to confirm the user simply has not saved the credential. Only then tell the user no saved credentials were found, and suggest they save the password in Chrome first or check a different profile.
 
 **If results are found:**
 Group by domain and present a table — show username and a masked password (first 2 chars + asterisks + last char, minimum 6 chars shown):
@@ -318,6 +322,8 @@ When called from another skill, accept the target domain as input, skip the user
 | Multiple entries for same domain | Show all and ask the user which one to use. |
 | User denies Keychain access | Explain they must click Allow for the script to read the Chrome encryption key. They can also try: System Settings → Privacy & Security → Keychain → add Terminal. |
 | `v10` prefix missing (old Chrome) | The script handles unencrypted legacy passwords automatically. |
+| `v20` prefix (Chrome ≥ 141 with app-bound encryption) | Decryption fails because `v20` is encrypted with a per-app key stored inside Chrome's data directory rather than the Keychain-derived key. This rollout is gradual on macOS. If you encounter `v20` entries, ask the user to paste the password manually — there is no supported extraction path from the CLI. |
+| Looking for a site but the request returned no matches | Re-check Step 0's alias map. Israeli government auth is spread across several hosts (e.g., Misim login actually saves under `secapp.taxes.gov.il` and `login.gov.il`). If a new host appears, add it to the alias map. |
 
 ---
 

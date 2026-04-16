@@ -65,7 +65,8 @@
       "WebFetch(domain:tofes101.co.il)",
       "WebFetch(domain:www.hachvana.mod.gov.il)",
       "WebFetch(domain:www.hilan.co.il)",
-      "WebFetch(domain:www.ardcpa.com)"
+      "WebFetch(domain:www.ardcpa.com)",
+      "WebFetch(domain:www.btl.gov.il)"
     ]
   }
 }
