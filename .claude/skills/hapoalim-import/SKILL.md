@@ -29,7 +29,7 @@ Before starting, verify the Playwright MCP server is available by checking if `m
 If the tax year was not provided as input, ask:
 > "Which tax year would you like to import from Bank Hapoalim? (e.g., 2022)"
 
-Valid range: 2019–2024. Store as `TAX_YEAR`.
+Valid range: `Y - 6` through `Y - 1`, where `Y` is the current calendar year (derived from today's date). Store as `TAX_YEAR`.
 
 ---
 

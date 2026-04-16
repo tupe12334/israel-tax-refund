@@ -21,7 +21,7 @@ You delegate the actual Gmail searching and reading to a sub-agent so it can fan
 If a tax year was not provided as input, ask:
 > "Which tax year would you like me to scan for? (e.g., 2023)"
 
-Valid range: 2019–2024. Store as `SCAN_YEAR`.
+Valid range: `Y - 6` through `Y - 1`, where `Y` is the current calendar year (derived from today's date). Store as `SCAN_YEAR`.
 
 ---
 

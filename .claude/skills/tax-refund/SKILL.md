@@ -218,7 +218,7 @@ Each `./data/<id>/info.md` holds all years for that filer. Key rules:
 
 Offer these tips proactively when relevant:
 
-- **Deadline**: Tax refund claims can be filed up to 6 years back. The window for 2019 closes at end of 2025.
+- **Deadline**: Tax refund claims can be filed up to 6 years back. If today's calendar year is `Y`, the oldest still-claimable tax year is `Y - 6`, and that window closes at the end of year `Y`.
 - **Form 106**: Employers must issue it by March 31st. If missing, ask your employer's HR or payroll department.
 - **Bank account**: Must be in the filer's name. Joint accounts are acceptable; foreign accounts are not.
 - **Status check**: After submitting, you can check your refund status at www.misim.gov.il under "בקשה להחזר מס".
