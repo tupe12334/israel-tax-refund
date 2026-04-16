@@ -59,7 +59,10 @@
       "mcp__plugin_playwright_playwright__browser_press_key",
       "mcp__plugin_playwright_playwright__browser_wait_for",
       "Skill(hapoalim-import)",
-      "Skill(bank-import)"
+      "Skill(bank-import)",
+      "Bash(git check-ignore *)",
+      "WebFetch(domain:www.kolzchut.org.il)",
+      "WebFetch(domain:tofes101.co.il)"
     ]
   }
 }
