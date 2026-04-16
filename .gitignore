@@ -1,4 +1,6 @@
 data/*
 !data/.gitkeep
 !data/README.md
+!data/example/
+!data/example/**
 .playwright-mcp

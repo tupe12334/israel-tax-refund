@@ -284,7 +284,7 @@ Accept corrections year-by-year before writing to disk.
 
 ## STEP 11 — WRITE TO `<year>.md`
 
-Read `./data/README.md` (schema reference) first. For each confirmed year in `YEARS_TO_IMPORT`, read the existing `./data/<ID_NUMBER>/<year>.md` (if it exists) with the Read tool, replace the file's top-level `EMPLOYERS` list with the new data, preserve every other section (`NII_BENEFITS`, `TAX_CREDITS`, `DEDUCTIONS`, `SUBMISSION`, …), and rewrite the complete `<year>.md`. Personal and bank data live in `info.md` and `bank.md` respectively — do not touch them.
+Read `./data/README.md` (schema reference) first. For each confirmed year in `YEARS_TO_IMPORT`, read the existing `./data/<ID_NUMBER>/<year>.md` (if it exists) with the Read tool, replace the file's top-level `EMPLOYERS` list with the new data, preserve every other section (`NII_BENEFITS`, `TAX_CREDITS`, `DEDUCTIONS`, `SUBMISSION`, …), and rewrite the complete `<year>.md`. Personal and bank data live in `info.md` and `bank.yaml` respectively — do not touch them.
 
 `EMPLOYERS` entry shape (top-level in `<year>.md`):
 
