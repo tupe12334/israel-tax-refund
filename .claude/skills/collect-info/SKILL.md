@@ -1,7 +1,7 @@
 ---
 name: collect-info
 description: Guides the user through a step-by-step interview to gather all information needed to file an Israeli tax refund (החזר מס / Form 135). Use when the user wants to start a tax refund claim, collect their tax data, or fill in their Form 106 details.
-allowed-tools: Bash(mkdir *) Bash(cp *) Write mcp__plugin_playwright_playwright__browser_navigate mcp__plugin_playwright_playwright__browser_snapshot mcp__plugin_playwright_playwright__browser_click mcp__plugin_playwright_playwright__browser_run_code mcp__plugin_playwright_playwright__browser_type mcp__plugin_playwright_playwright__browser_fill_form mcp__plugin_playwright_playwright__browser_wait_for mcp__plugin_playwright_playwright__browser_take_screenshot
+allowed-tools: Bash(mkdir *) Bash(cp *) Write Read mcp__plugin_playwright_playwright__browser_navigate mcp__plugin_playwright_playwright__browser_snapshot mcp__plugin_playwright_playwright__browser_click mcp__plugin_playwright_playwright__browser_run_code mcp__plugin_playwright_playwright__browser_type mcp__plugin_playwright_playwright__browser_fill_form mcp__plugin_playwright_playwright__browser_wait_for mcp__plugin_playwright_playwright__browser_take_screenshot
 ---
 
 You are a knowledgeable Israeli tax assistant. Your job is to guide the user through a friendly, step-by-step interview to gather everything needed to submit a tax refund request (החזר מס / Form 135) through the Israeli Tax Authority (רשות המסים).
@@ -45,14 +45,55 @@ The user can confirm with "yes", or type a correction. This applies to all field
 
 ## SAVING
 
-After **every step** (1 through 9), immediately write the current collected data to disk:
+After **every step** (1 through 9), immediately write the current collected data to disk.
 
-- Directory: `./data/` — create it with `mkdir -p ./data` if it doesn't exist yet.
-- File path: `./data/<id_number>.md` using the filer's 9-digit Israeli ID.
-  - Before Step 2 is complete (no ID yet), use `./data/draft.md` as a temporary filename.
-  - Once the ID is collected in Step 2, rename by writing to `./data/<id_number>.md` (you can simply write the new file; the draft can remain).
-- File content: the same structured block as the SUMMARY template below, but only populate the fields collected so far — leave unpopulated fields blank or omit them.
-- Wrap the content in a markdown code fence labeled `tax-data`, under a heading `# Tax Refund Data — <name or "Draft">`.
+### File layout
+
+- Directory: `./data/<id_number>/` — create it with `mkdir -p ./data/<id_number>` if it doesn't exist yet.
+- File path: `./data/<id_number>/info.md` using the filer's 9-digit Israeli ID.
+  - Before Step 2 is complete (no ID yet), use `./data/draft/info.md` as a temporary filename.
+  - Once the ID is collected in Step 2, write to `./data/<id_number>/info.md` (the draft can remain).
+
+### Multi-year format
+
+The file holds **all years for this filer** in a single document. `PERSONAL` is at the top level (shared across years). Each tax year's data lives under `YEARS: <year>:`.
+
+**Before every save after Step 2:** read the existing `./data/<id_number>/info.md` with the Read tool (if it exists) to preserve data for other years. Merge the current year's collected data into the `YEARS` block, then write the complete file.
+
+File template:
+
+```
+# Tax Refund Data — <name or "Draft">
+
+```tax-data
+PERSONAL:
+  id: <9-digit ID>
+  name: <full name>
+  dob: <DD/MM/YYYY>
+  phone: <05X-XXXXXXX>
+  email: <email>
+  marital_status: <single|married|divorced|widowed>
+
+YEARS:
+  <year>:
+    EMPLOYERS:
+      - employer_index: 1
+        ...
+    NII_BENEFITS:
+      ...
+    INVESTMENT_INCOME: ...
+    TAX_CREDITS:
+      ...
+    DEDUCTIONS:
+      ...
+    BANK:
+      ...
+  <other_year>:
+    ...
+` `` ← close the fence (no space)
+```
+
+Only populate sections collected so far — leave unpopulated sections absent.
 
 Write silently — do not announce the save to the user after every step. A single quiet mention like "(progress saved)" at the end of your acknowledgement message is enough.
 
@@ -66,7 +107,6 @@ cp "<source_path>" "./data/<id_number>/"
 
 - Create the `./data/<id_number>/` subdirectory with `mkdir -p` if it doesn't exist.
 - Do this silently as part of the step where the document is provided.
-- The structured data file (`./data/<id_number>.md`) stays at the top level of `./data/`, only supporting documents go inside the subdirectory.
 
 ---
 
@@ -75,10 +115,11 @@ cp "<source_path>" "./data/<id_number>/"
 Ask: "Which tax year are you claiming a refund for? (You can go back up to 6 years.)"
 
 - Valid range: 2019 through 2024 (filing year is 2025 — adjust if current year changes).
-- A user may claim multiple years; handle each as a separate data set.
+- A user may claim multiple years; handle each as a separate data set collected one at a time.
 - If they say "all years I can" or "I'm not sure", tell them the 6-year window and suggest starting with the most recent year first.
+- If `./data/<id_number>/info.md` already exists and already contains data for the requested year, warn the user: "I already have saved data for <year>. Continuing will overwrite it — is that OK?" before proceeding.
 
-**After this step:** save to `./data/draft.md` with only `TAX_YEAR` populated.
+**After this step:** save to `./data/draft/info.md` with only `TAX_YEAR` noted in a comment inside the `YEARS` block.
 
 ---
 
@@ -94,7 +135,9 @@ Collect for the **primary filer**:
 | Mobile phone | טלפון נייד | Used for OTP login; Israeli format 05X-XXXXXXX |
 | Email address | כתובת דוא"ל | For correspondence |
 
-**After this step:** save to `./data/<id_number>.md` with `TAX_YEAR` and `PERSONAL` populated.
+**PERSONAL is shared across years.** If `./data/<id_number>/info.md` already exists and already has a `PERSONAL` block, show the existing values and ask the user to confirm or update them. Do not silently overwrite personal details.
+
+**After this step:** read the existing file (if any), merge in the `PERSONAL` block, and save to `./data/<id_number>/info.md`.
 
 ---
 
@@ -109,7 +152,7 @@ Ask: "What is your marital status? (Single / Married / Divorced / Widowed)"
 - Collect spouse details: ID number, full name, date of birth.
 - Ask: "Was your spouse also employed during [tax year]?" → if yes, collect spouse Form 106 data in Step 4.
 
-**After this step:** update the file with `marital_status` and `SPOUSE` (if applicable).
+**After this step:** update the file with `marital_status` in `PERSONAL` and `SPOUSE` under `YEARS.<year>` (if applicable).
 
 ---
 
@@ -132,7 +175,7 @@ If the user had more than one employer, repeat for each. If they had a **tax coo
 
 **If MARRIED and spouse was employed:** Repeat this step for the spouse (collect same Form 106 fields for each of their employers).
 
-**After this step:** update the file with `EMPLOYERS` and `SPOUSE_EMPLOYERS` (if applicable).
+**After this step:** update `YEARS.<year>.EMPLOYERS` and `YEARS.<year>.SPOUSE_EMPLOYERS` (if applicable) in the file.
 
 ---
 
@@ -149,7 +192,7 @@ Present as a checklist — collect for each applicable item:
 
 > "These figures appear on the annual certificate (אישור שנתי) issued by ביטוח לאומי."
 
-**After this step:** update the file with `NII_BENEFITS`.
+**After this step:** update `YEARS.<year>.NII_BENEFITS` in the file.
 
 ---
 
@@ -164,7 +207,7 @@ If yes, for **each financial institution** (bank, broker):
 
 > "Form 867 is an annual tax certificate from your bank or investment broker."
 
-**After this step:** update the file with `INVESTMENT_INCOME`.
+**After this step:** update `YEARS.<year>.INVESTMENT_INCOME` in the file.
 
 ---
 
@@ -206,7 +249,7 @@ Ask each of the following yes/no questions; collect details only when the answer
 "Are you a single parent?"
 - If yes: note it (entitles to additional credit point).
 
-**After this step:** update the file with `TAX_CREDITS`.
+**After this step:** update `YEARS.<year>.TAX_CREDITS` in the file.
 
 ---
 
@@ -225,7 +268,7 @@ Ask each of the following yes/no questions; collect details only when the answer
 ### 8c. Professional Development Fund — Keren Hishtalmut (קרן השתלמות)
 - Usually handled via paycheck; ask only if the user deposited directly.
 
-**After this step:** update the file with `DEDUCTIONS`.
+**After this step:** update `YEARS.<year>.DEDUCTIONS` in the file.
 
 ---
 
@@ -235,20 +278,16 @@ Run the `bank-import` skill inline, passing the filer's ID number and full name.
 
 The skill will open the bank portal via Playwright, wait for the user to log in, automatically extract the branch and account numbers, validate them, confirm with the user, and update the data file.
 
-Parse the returned `BANK_IMPORT` block and ensure the `BANK` section is present in `./data/<id_number>.md`.
-
-**After this step:** the data file is updated with `BANK` by the skill.
+Parse the returned `BANK_IMPORT` block and write it to `YEARS.<year>.BANK` in `./data/<id_number>/info.md`.
 
 ---
 
 ## STEP 10 — FINAL SUMMARY & CONFIRMATION
 
-Once all data is collected, print a complete structured summary in the following JSON-like format, then ask: "Please review all the details above. Is everything correct? (Yes / No — and tell me what to fix)"
+Once all data is collected, print a complete structured summary in the following format, then ask: "Please review all the details above. Is everything correct? (Yes / No — and tell me what to fix)"
 
 ```
 === TAX REFUND DATA SUMMARY ===
-
-TAX_YEAR: <year>
 
 PERSONAL:
   id: <9-digit ID>
@@ -258,64 +297,66 @@ PERSONAL:
   email: <email>
   marital_status: <single|married|divorced|widowed>
 
-SPOUSE (if applicable):
-  id: <ID>
-  name: <name>
-  dob: <DOB>
+YEAR: <year>
 
-EMPLOYERS:
-  - employer_index: 1
-    field_158_taxable_income: <amount>
-    field_042_tax_withheld: <amount>
-    field_045_employee_pension: <amount>
-    months_worked: <1-12>
-  (repeat for each employer)
+  SPOUSE (if applicable):
+    id: <ID>
+    name: <name>
+    dob: <DOB>
 
-SPOUSE_EMPLOYERS (if applicable):
-  (same structure)
+  EMPLOYERS:
+    - employer_index: 1
+      field_158_taxable_income: <amount>
+      field_042_tax_withheld: <amount>
+      field_045_employee_pension: <amount>
+      months_worked: <1-12>
+    (repeat for each employer)
 
-NII_BENEFITS:
-  unemployment:  { income: <amount>, tax_withheld: <amount> }
-  maternity:     { income: <amount>, tax_withheld: <amount> }
-  reserve_duty:  { income: <amount>, tax_withheld: <amount> }
-  work_injury:   { income: <amount>, tax_withheld: <amount> }
+  SPOUSE_EMPLOYERS (if applicable):
+    (same structure)
 
-INVESTMENT_INCOME:
-  - institution: <name>
-    income: <amount>
-    tax_withheld: <amount>
+  NII_BENEFITS:
+    unemployment:  { income: <amount>, tax_withheld: <amount> }
+    maternity:     { income: <amount>, tax_withheld: <amount> }
+    reserve_duty:  { income: <amount>, tax_withheld: <amount> }
+    work_injury:   { income: <amount>, tax_withheld: <amount> }
 
-TAX_CREDITS:
-  children:
-    - birth_year: <YYYY>
-      benefit_recipient: <primary|spouse>
-  oleh: { aliyah_date: <MM/YYYY> }
-  military: { discharge_date: <MM/YYYY>, service_months: <N> }
-  academic: { degree_type: <BA|BSc|teaching|other>, graduation_year: <YYYY> }
-  development_area: { settlement: <name> }
-  disability: { who: <self|child|dependent>, percentage: <N> }
-  single_parent: <true|false>
-
-DEDUCTIONS:
-  donations:
+  INVESTMENT_INCOME:
     - institution: <name>
-      amount: <NIS amount>
-  pension_direct:
-    - institution: <name>
-      annual_amount: <NIS amount>
+      income: <amount>
+      tax_withheld: <amount>
 
-BANK:
-  bank_number: <N>
-  branch_number: <NNN>
-  account_number: <account>
-  account_holder: <name>
+  TAX_CREDITS:
+    children:
+      - birth_year: <YYYY>
+        benefit_recipient: <primary|spouse>
+    oleh: { aliyah_date: <MM/YYYY> }
+    military: { discharge_date: <MM/YYYY>, service_months: <N> }
+    academic: { degree_type: <BA|BSc|teaching|other>, graduation_year: <YYYY> }
+    development_area: { settlement: <name> }
+    disability: { who: <self|child|dependent>, percentage: <N> }
+    single_parent: <true|false>
+
+  DEDUCTIONS:
+    donations:
+      - institution: <name>
+        amount: <NIS amount>
+    pension_direct:
+      - institution: <name>
+        annual_amount: <NIS amount>
+
+  BANK:
+    bank_number: <N>
+    branch_number: <NNN>
+    account_number: <account>
+    account_holder: <name>
 
 === END OF SUMMARY ===
 ```
 
-After the user confirms, do a final write of the complete summary to `./data/<id_number>.md` (overwriting the incremental saves with the confirmed, final version).
+After the user confirms, read the existing `./data/<id_number>/info.md`, merge in the confirmed year data under `YEARS.<year>`, and write the complete file (preserving all other years).
 
-Tell the user: "Great — your information has been saved to `./data/<id_number>.md`. You can now run the login skill to begin the submission."
+Tell the user: "Great — your information has been saved to `./data/<id_number>/info.md`. You can now run the login skill to begin the submission."
 
 ---
 

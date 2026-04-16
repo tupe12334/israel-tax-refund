@@ -13,7 +13,7 @@ Detect the user's language and respond in it throughout.
 ## STEP 1 — GET FILER CONTEXT
 
 You need the filer's **Israeli ID number** and **full name** to:
-- Know which data file to update (`./data/<id_number>.md`)
+- Know which data file to update (`./data/<id_number>/info.md`)
 - Validate that the account holder name on the bank portal matches the filer
 
 If called inline from `collect-info`, these are already known — use them directly.
@@ -137,7 +137,7 @@ If DOM extraction fails, take a full-page screenshot and read the account detail
 
 ### Save to data file
 
-If `./data/<id_number>.md` exists, open it and update (or append) the `BANK:` section under the `tax-data` block with the confirmed values. Write the updated file with the Write tool.
+If `./data/<id_number>/info.md` exists, open it and update (or append) the `BANK:` section under the `tax-data` block with the confirmed values. Write the updated file with the Write tool.
 
 ### Return structured output
 

@@ -34,7 +34,7 @@ Then retry navigation.
 
 ## STEP 1 — FIND EXISTING DATA
 
-Read the `./data/` directory contents. Look for a file named `<id>.md` (excluding `draft.md`). If found, read it and check whether `TAX_CREDITS.military` is already populated (not `PENDING` and not empty).
+Read the `./data/` directory contents. Look for a directory named with a 9-digit ID (excluding `draft`). If found, read `<id>/info.md` and check whether `TAX_CREDITS.military` is already populated (not `PENDING` and not empty).
 
 - **If already populated:** Show the existing data to the user and ask: "Military service data already exists — would you like to keep it or refresh it from the IDF portal?"
   - If keep → skip to STEP 9 and output the existing data.
@@ -66,7 +66,7 @@ After clicking, take a screenshot to confirm the MyIDF login page loaded (it sho
 
 ### Auto-fill credentials
 
-Read the user's data file at `./data/<id>.md` to get:
+Read the user's data file at `./data/<id>/info.md` to get:
 - `PERSONAL.id` → used to form the MyIDF email: `<id>@idf.il`
 
 Run the `chrome-credentials` skill to retrieve the saved password for `my.idf.il` (or `idf.il`).
@@ -264,7 +264,7 @@ If the user corrects any value, update it immediately before proceeding.
 
 ## STEP 8 — UPDATE TAX DATA FILE
 
-Find the user's data file at `./data/<id>.md`. Under the `TAX_CREDITS:` section, update or add the `military` entry with the confirmed data.
+Find the user's data file at `./data/<id>/info.md`. Under the `TAX_CREDITS:` section, update or add the `military` entry with the confirmed data.
 
 **If `TAX_CREDITS: PENDING` exists as a single line**, replace it with a proper section block that preserves any other credits already collected.
 

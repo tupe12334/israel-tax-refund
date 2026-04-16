@@ -26,7 +26,7 @@ Before starting, verify the Playwright MCP server is available by checking if `m
 
 ## STEP 1 — FIND EXISTING DATA
 
-Read the `./data/` directory contents. Look for a file named `<id>.md` (excluding `draft.md`). If found, read it and check whether `reserve_duty` income is already populated (not `PENDING` and not empty).
+Read the `./data/` directory contents. Look for a directory named with a 9-digit ID (excluding `draft`). If found, read `<id>/info.md` and check whether `reserve_duty` income is already populated (not `PENDING` and not empty).
 
 - **If already populated:** Show the existing data to the user and ask: "Reserve duty data already exists — would you like to keep it or refresh it from the Miluim portal?"
   - If keep → skip to STEP 6 and output the existing data.
@@ -121,7 +121,7 @@ If the certificate page is not found or the download fails, skip silently and co
 
 ## STEP 6 — UPDATE TAX DATA FILE
 
-Find the user's data file at `./data/<id>.md`. Update or add the `reserve_duty` section under `INCOME:`.
+Find the user's data file at `./data/<id>/info.md`. Update or add the `reserve_duty` section under `INCOME:`.
 
 **If `INCOME: PENDING` exists as a single line**, replace it with a proper section block preserving any other income already collected.
 

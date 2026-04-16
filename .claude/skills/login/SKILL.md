@@ -40,20 +40,30 @@ Run:
 ls -1 ./data/
 ```
 
-- If exactly one `<id>.md` file exists, use it.
-- If multiple exist, list them with their filer name + tax year (read each file's heading) and ask the user which filer they want to authenticate as.
-- If none exist, tell the user: "I couldn't find a saved data file. Please run the `collect-info` skill first." Then stop.
+- If exactly one filer directory exists, use its `info.md`.
+- If multiple directories exist, list each filer's name + the years present in each `info.md` and ask the user which filer + year they want to authenticate for.
+- If no directories exist (or no `info.md` files inside them), tell the user: "I couldn't find a saved data file. Please run the `collect-info` skill first." Then stop.
 
-Read the chosen file with the Read tool and extract:
-- `ID_NUMBER` (9-digit Israeli ID / ת.ז.)
-- `FILER_NAME`
-- `TAX_YEAR`
+Read `./data/<id>/info.md` with the Read tool.
+
+The file uses the multi-year format:
+```
+PERSONAL:          ← id, name, dob, phone, email — shared across all years
+YEARS:
+  <year>:
+    ...
+```
+
+Extract:
+- `ID_NUMBER` ← `PERSONAL.id`
+- `FILER_NAME` ← `PERSONAL.name`
+- `TAX_YEAR` ← the year being filed (if a year was passed by the caller, use it; otherwise, if multiple years exist and none is submitted yet, ask the user which year they are logging in to file)
 
 ---
 
 ## SAVING — SESSION STATE
 
-After every meaningful step, append/update `./data/<id_number>.session.md` with a `login-session` code fence:
+After every meaningful step, append/update `./data/<id_number>/session.md` with a `login-session` code fence:
 
 ```login-session
 status: <not-started | portal-open | awaiting-credentials | awaiting-otp | authenticated | failed>

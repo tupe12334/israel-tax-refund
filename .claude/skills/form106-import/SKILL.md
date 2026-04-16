@@ -37,7 +37,7 @@ Read the `./data/` directory:
 ls -1 ./data/
 ```
 
-Look for a file named `<id>.md` (not `draft.md`). If found, read it and check:
+Look for a directory named with a 9-digit ID (not `draft`). If found, read `<id>/info.md` and check:
 - Whether `EMPLOYERS` is already populated (not `PENDING` and not empty).
 - The `TAX_YEAR` field.
 
@@ -351,7 +351,7 @@ Accept corrections and update the data before proceeding.
 
 ## STEP 12 — UPDATE TAX DATA FILE
 
-Find the user's data file at `./data/<ID_NUMBER>.md`.
+Find the user's data file at `./data/<ID_NUMBER>/info.md`.
 
 Update or add the `EMPLOYERS:` section with the confirmed data. If `EMPLOYERS: PENDING` exists as a single line, replace it with a proper block. Preserve all other sections.
 
