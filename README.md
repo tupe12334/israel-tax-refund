@@ -110,3 +110,7 @@ Improvements to the CLAUDE.md instructions, skills, or Playwright flow are welco
 ## Disclaimer
 
 This tool automates interaction with publicly accessible government web portals on your behalf. You are responsible for the accuracy of the information you provide. This is not legal or tax advice.
+
+## License
+
+Released under the [PolyForm Noncommercial License 1.0.0](LICENSE). You may use, modify, and share this project for **personal and other noncommercial purposes only**. Commercial use — including using it to file returns on behalf of paying clients, bundling it into a paid product or service, or any other use intended for commercial advantage — is **not permitted** without a separate written license from the author.
