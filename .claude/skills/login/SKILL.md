@@ -44,15 +44,7 @@ ls -1 ./data/
 - If multiple directories exist, list each filer's name + the years present in each `info.md` and ask the user which filer + year they want to authenticate for.
 - If no directories exist (or no `info.md` files inside them), tell the user: "I couldn't find a saved data file. Please run the `collect-info` skill first." Then stop.
 
-Read `./data/<id>/info.md` with the Read tool.
-
-The file uses the multi-year format:
-```
-PERSONAL:          ← id, name, dob, phone, email — shared across all years
-YEARS:
-  <year>:
-    ...
-```
+**Read `./data/README.md`** for the complete file schema, then read `./data/<id>/info.md` with the Read tool.
 
 Extract:
 - `ID_NUMBER` ← `PERSONAL.id`

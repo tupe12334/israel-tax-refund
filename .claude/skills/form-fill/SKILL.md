@@ -37,35 +37,16 @@ Run:
 ls -1 ./data/
 ```
 
-- If exactly one `<id>.md` file exists, use it.
-- If multiple `.md` files exist, list each filer name + the years present in each file, and ask which filer + year to submit.
+- If exactly one filer directory exists, use its `info.md`.
+- If multiple directories exist, list each filer name + the years present in each `info.md`, and ask which filer + year to submit.
 - If none exist, tell the user to run `collect-info` first. Then stop.
 
-Read the chosen file with the Read tool.
+**Read `./data/README.md`** for the complete file schema, then read `./data/<id>/info.md` with the Read tool.
 
-### Multi-year format
-
-The file uses this structure:
-
-```
-PERSONAL:          ← id, name, dob, phone, email, marital_status
-YEARS:
-  <year>:          ← all year-specific data lives here
-    EMPLOYERS: ...
-    NII_BENEFITS: ...
-    INVESTMENT_INCOME: ...
-    TAX_CREDITS: ...
-    DEDUCTIONS: ...
-    BANK: ...
-```
-
-1. Extract `PERSONAL` fields (shared across all years).
-2. List the years present under `YEARS`. If more than one year exists and no year was specified by the caller, ask the user which year to submit.
-3. Extract the chosen year's section from `YEARS.<year>`.
-4. Merge them into `FORM_DATA`:
-   - `id_number`, `full_name`, `dob`, `phone`, `email`, `marital_status` ← from `PERSONAL`
-   - `tax_year` ← the chosen year
-   - `EMPLOYERS`, `NII_BENEFITS`, `INVESTMENT_INCOME`, `TAX_CREDITS`, `DEDUCTIONS`, `BANK` ← from `YEARS.<year>`
+Build `FORM_DATA` by merging:
+1. `PERSONAL` fields → `id_number`, `full_name`, `dob`, `phone`, `email`, `marital_status`
+2. If more than one year exists under `YEARS` and no year was specified by the caller, ask the user which year to submit.
+3. The chosen year's section → `tax_year` (the year key), plus `EMPLOYERS`, `NII_BENEFITS`, `INVESTMENT_INCOME`, `TAX_CREDITS`, `DEDUCTIONS`, `BANK`
 
 Cross-check that at minimum these required fields are present:
 

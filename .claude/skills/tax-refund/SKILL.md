@@ -37,26 +37,11 @@ This lists filer directories (one directory per filer, containing all their year
 
 ---
 
-## READING THE DATA FILE — MULTI-YEAR FORMAT
+## READING THE DATA FILE
 
-Each `./data/<id>/info.md` file follows the multi-year format:
+**Read `./data/README.md`** for the complete file schema before reading any filer file.
 
-```
-PERSONAL:          ← shared across all years (ID, name, DOB, phone, email)
-YEARS:
-  2023:            ← year-specific data
-    EMPLOYERS: ...
-    NII_BENEFITS: ...
-    INVESTMENT_INCOME: ...
-    TAX_CREDITS: ...
-    DEDUCTIONS: ...
-    BANK: ...
-    SUBMISSION:    ← optional: status + confirmation_number after filing
-  2022:
-    ...
-```
-
-When reading a file, extract:
+When reading `./data/<id>/info.md`, extract:
 - Filer name and ID from `PERSONAL`.
 - The list of years present under `YEARS`.
 - For each year, whether it has been submitted (look for `SUBMISSION.status: submitted` and a `confirmation_number`).
