@@ -233,6 +233,8 @@ Ask each of the following yes/no questions; collect details only when the answer
 ### 8b. Pension / Life Insurance NOT Through Paycheck
 "Did you make pension, life insurance, or provident fund payments directly (not deducted automatically from your salary)?"
 - If yes: institution name, annual amount paid.
+- **Deduplication check:** After the user names the institution, compare it against all `employer_name` and pension providers already collected in Step 4. If the institution matches an employer's known pension provider (i.e., any employer has a non-zero `field_045_employee_pension`), ask: "It looks like [institution] may be your employer's pension provider — contributions already deducted from your salary are in field 045 and don't need to be entered here. Were you also making *additional, independent* contributions directly to this institution?" Only record a non-zero amount if the user confirms separate direct payments.
+- **Never leave PENDING:** If the amount cannot be determined during the interview (e.g., user says "I'll check"), set it to `0 (unconfirmed — verify before submission)` and flag it for the user to follow up. Do not write `PENDING` to the file.
 - Note: if this was deducted from salary (field 045 on Form 106), it's already captured in Step 4.
 
 ### 8c. Professional Development Fund — Keren Hishtalmut (קרן השתלמות)

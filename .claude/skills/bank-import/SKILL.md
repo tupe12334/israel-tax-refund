@@ -41,7 +41,9 @@ Map the answer to a bank number:
 
 ## STEP 3 — OPEN BANK PORTAL
 
-Navigate to the bank's login page and wait for the user to confirm they are logged in before proceeding.
+**Before navigating to the login page**, take a screenshot of the current browser page and check the URL. If it already shows a logged-in session for the selected bank (e.g., URL contains `bankhapoalim.co.il/ng-portals/rb/` for Hapoalim), skip to Step 4 directly — the user is already authenticated and there is no need to log in again.
+
+If no active session is detected, navigate to the bank's login page and wait for the user to confirm they are logged in before proceeding.
 
 ### Bank Hapoalim (12)
 Navigate to: `https://login.bankhapoalim.co.il/ng-portals/auth/he/login`
