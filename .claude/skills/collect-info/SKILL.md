@@ -84,7 +84,7 @@ cp "<source_path>" "./data/<id_number>/"
 
 Ask: "Which tax year are you claiming a refund for? (You can go back up to 6 years.)"
 
-- Valid range: 2019 through 2024 (filing year is 2025 — adjust if current year changes).
+- Valid range: the most recent completed tax year going back 6 years. Compute from today's date — if today is in year `Y`, the most recent completed tax year is `Y - 1` and the oldest claimable year is `Y - 6`.
 - A user may claim multiple years; handle each as a separate data set collected one at a time.
 - If they say "all years I can" or "I'm not sure", tell them the 6-year window and suggest starting with the most recent year first.
 - If `./data/<id_number>/info.md` already exists and already contains data for the requested year, warn the user: "I already have saved data for <year>. Continuing will overwrite it — is that OK?" before proceeding.
@@ -277,7 +277,7 @@ The ID number is valid if:
 If the ID fails, say: "That ID number doesn't look valid — please double-check it."
 
 ### Tax year
-- Must be between 2019 and 2024 (inclusive). Adjust as needed for the current filing year.
+- Must be between `Y - 6` and `Y - 1` inclusive, where `Y` is the current calendar year (derived from today's date).
 - If outside this range, explain: "The Tax Authority accepts refund claims up to 6 years back."
 
 ### Phone number
