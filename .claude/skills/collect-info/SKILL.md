@@ -56,42 +56,12 @@ After **every step** (1 through 9), immediately write the current collected data
 
 ### Multi-year format
 
-The file holds **all years for this filer** in a single document. `PERSONAL` is at the top level (shared across years). Each tax year's data lives under `YEARS: <year>:`.
+**Read `./data/README.md`** for the complete file schema before writing. Follow that schema exactly.
 
-**Before every save after Step 2:** read the existing `./data/<id_number>/info.md` with the Read tool (if it exists) to preserve data for other years. Merge the current year's collected data into the `YEARS` block, then write the complete file.
-
-File template:
-
-```
-# Tax Refund Data — <name or "Draft">
-
-```tax-data
-PERSONAL:
-  id: <9-digit ID>
-  name: <full name>
-  dob: <DD/MM/YYYY>
-  phone: <05X-XXXXXXX>
-  email: <email>
-  marital_status: <single|married|divorced|widowed>
-
-YEARS:
-  <year>:
-    EMPLOYERS:
-      - employer_index: 1
-        ...
-    NII_BENEFITS:
-      ...
-    INVESTMENT_INCOME: ...
-    TAX_CREDITS:
-      ...
-    DEDUCTIONS:
-      ...
-    BANK:
-      ...
-  <other_year>:
-    ...
-` `` ← close the fence (no space)
-```
+Key rules (also stated in the README):
+- `PERSONAL` is shared across all years — write it once at the top level.
+- All year-specific data (employers, income, credits, deductions, bank, submission) goes under `YEARS: <year>:`.
+- **Before every save after Step 2:** read the existing `./data/<id_number>/info.md` with the Read tool (if it exists) to preserve other years' data. Merge and rewrite the complete file.
 
 Only populate sections collected so far — leave unpopulated sections absent.
 
