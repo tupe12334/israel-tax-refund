@@ -62,7 +62,10 @@
       "Skill(bank-import)",
       "Bash(git check-ignore *)",
       "WebFetch(domain:www.kolzchut.org.il)",
-      "WebFetch(domain:tofes101.co.il)"
+      "WebFetch(domain:tofes101.co.il)",
+      "WebFetch(domain:www.hachvana.mod.gov.il)",
+      "WebFetch(domain:www.hilan.co.il)",
+      "WebFetch(domain:www.ardcpa.com)"
     ]
   }
 }
