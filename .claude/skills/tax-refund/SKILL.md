@@ -30,10 +30,36 @@ Before saying anything else, run the following to understand where the user is i
 ls -1 ./data/ 2>/dev/null
 ```
 
-This lists any saved data files (one file = one person's collected data). Use the results to determine the user's current phase:
+This lists filer directories (one directory per filer, containing all their years). Use the results to determine the user's current phase:
 
-- **No files found** → User has not started. Go to PHASE 1.
-- **One or more `.md` files found** → User has data saved. Read the file(s) and go to RESUME FLOW.
+- **No directories found** → User has not started. Go to PHASE 1.
+- **One or more directories found** → User has data saved. Read each `<id>/info.md` and go to RESUME FLOW.
+
+---
+
+## READING THE DATA FILE — MULTI-YEAR FORMAT
+
+Each `./data/<id>/info.md` file follows the multi-year format:
+
+```
+PERSONAL:          ← shared across all years (ID, name, DOB, phone, email)
+YEARS:
+  2023:            ← year-specific data
+    EMPLOYERS: ...
+    NII_BENEFITS: ...
+    INVESTMENT_INCOME: ...
+    TAX_CREDITS: ...
+    DEDUCTIONS: ...
+    BANK: ...
+    SUBMISSION:    ← optional: status + confirmation_number after filing
+  2022:
+    ...
+```
+
+When reading a file, extract:
+- Filer name and ID from `PERSONAL`.
+- The list of years present under `YEARS`.
+- For each year, whether it has been submitted (look for `SUBMISSION.status: submitted` and a `confirmation_number`).
 
 ---
 
@@ -58,17 +84,22 @@ The whole process takes about 15–20 minutes. Ready to start?
 
 ### If data file(s) found (returning user):
 
-List the found files, show which person/year each represents, and ask what they want to do:
+Read each file, extract all years and their submission status, then show:
 
 ```
 Welcome back! I found saved data for the following filer(s):
 
-  • <name> — Tax Year <year>  (./data/<id>.md)
-  [repeat for each file]
+  • <name> (ID: <id>)
+      - <year>  ✅ submitted  (conf. <number>)
+      - <year>  ⏳ data collected, not yet submitted
+      - <year>  📝 data collection in progress
+    File: ./data/<id>/info.md
+
+  [repeat for each filer file]
 
 What would you like to do?
-  [A] Continue to the next phase (login & submission)
-  [B] Collect data for a new tax year or filer
+  [A] Continue to the next phase for an existing year
+  [B] Collect data for a new tax year
   [C] Review or correct saved data
 ```
 
@@ -90,14 +121,13 @@ Then immediately run the full `collect-info` skill flow inline — do not ask th
 
 ### PHASE 1 COMPLETE
 
-After the `collect-info` skill saves a data file, read the file and validate it contains **all required fields** before continuing:
+After the `collect-info` skill saves the year's data, read the file and validate that the year's section contains **all required fields** before continuing:
 
-**Required fields (must be non-empty):**
-- `id` — Israeli ID number
-- `name` — Full name
-- `tax_year` — Tax year
-- `bank_account` — Bank account details (bank, branch, account number)
-- At least one income source (Form 106 / employment income OR other income)
+**Required fields (must be non-empty) under `YEARS.<year>`:**
+- `PERSONAL.id` — Israeli ID number
+- `PERSONAL.name` — Full name
+- `BANK` — Bank account details (bank, branch, account number)
+- At least one income source (`EMPLOYERS` with at least one entry, OR other income)
 
 If **any required field is missing or empty**, do NOT proceed to Phase 2. Instead:
 ```
@@ -134,7 +164,7 @@ What you'll need ready:
 
 Before running the `login` skill, re-read the data file and verify all required fields are present (same check as PHASE 1 COMPLETE). If anything is missing, stop and direct the user back to Phase 1 to complete their data.
 
-Then immediately run the `login` skill inline. After it reports a successful authentication, continue to PHASE 3.
+Then immediately run the `login` skill inline, passing the chosen tax year. After it reports a successful authentication, continue to PHASE 3.
 
 If login fails or the user cancels, stop here and offer to retry later. Do not proceed to PHASE 3 without an authenticated session.
 
@@ -146,12 +176,14 @@ Tell the user:
 ```
 Phase 3 — Fill and Submit Form 135
 
-I'll use your saved data (./data/<id>.md) to fill Form 135, show you a full review, and submit only after you confirm.
+I'll use your saved data (./data/<id>/info.md, year <year>) to fill Form 135, show you a full review, and submit only after you confirm.
 ```
 
-Then immediately run the `form-fill` skill inline. It will reuse the authenticated browser session from Phase 2.
+Then immediately run the `form-fill` skill inline, passing the chosen tax year. It will reuse the authenticated browser session from Phase 2.
 
-After `form-fill` reports a confirmation number, congratulate the user and remind them to keep the reference number.
+After `form-fill` reports a confirmation number:
+1. Write the confirmation number and `status: submitted` back into the data file under `YEARS.<year>.SUBMISSION`.
+2. Congratulate the user and remind them to keep the reference number.
 
 ---
 
@@ -159,34 +191,41 @@ After `form-fill` reports a confirmation number, congratulate the user and remin
 
 When a data file exists and the user selects option A (continue to next phase):
 
-1. Read the data file with the Read tool.
-2. Extract: filer name, tax year, ID.
-3. Show a brief summary:
+1. Ask which filer and year they want to continue with (if ambiguous).
+2. Read the data file with the Read tool.
+3. Determine the phase for the chosen year:
+   - No `EMPLOYERS` data → Phase 1 incomplete.
+   - `EMPLOYERS` present, no `SUBMISSION` block → Phase 2/3 not done.
+   - `SUBMISSION.status: submitted` → Already submitted; offer status info.
+4. Show a brief status:
    ```
    Filer:     <name>
    Tax Year:  <year>
-   Data file: ./data/<id>.md
+   Data file: ./data/<id>/info.md
 
    Phase 1 ✅  Data collected
-   Phase 2 ⏳  Login — coming soon
-   Phase 3 ⏳  Form submission — coming soon
+   Phase 2 ⏳  Login — ready
+   Phase 3 ⏳  Form submission — ready
    ```
-4. Tell the user what the next available action is and offer to proceed.
+5. Tell the user what the next available action is and offer to proceed.
 
 When the user selects option C (review/correct data):
-- Read the file with the Read tool and display its contents clearly.
+- Ask which filer and year to review.
+- Read the file with the Read tool and display the chosen year's section clearly.
 - Ask which field(s) they want to correct.
-- Once the user specifies what to fix, immediately run the `collect-info` skill flow inline to re-collect and overwrite the data.
+- Once the user specifies what to fix, immediately run the `collect-info` skill flow inline to re-collect and overwrite that year's data. `collect-info` will preserve the other years in the file.
 
 ---
 
 ## MULTI-YEAR HANDLING
 
-A user may have data files for multiple tax years (e.g., `./data/123456789.md` contains year 2023, and they now want to file for 2022).
+Each `./data/<id>/info.md` holds all years for that filer. Key rules:
 
-- Encourage users to file year by year.
-- Each run of `collect-info` overwrites the same ID file — warn the user if they are about to overwrite existing data.
-- Suggest completing submission for one year before starting another.
+- Filing happens one year at a time — run Phase 2 and 3 separately for each year.
+- `collect-info` merges new year data into the file without disturbing other years.
+- Before starting a new year's data collection, warn the user if data for that year already exists in the file.
+- Encourage users to complete (submit) one year before moving to another — an active browser session can only hold one Form 135 at a time.
+- The `SUBMISSION` block under each year is the source of truth for whether that year has been filed.
 
 ---
 
@@ -208,7 +247,7 @@ Handle these gracefully:
 
 - **`./data/` directory does not exist**: Treat as no data found (fresh start). The `collect-info` skill will create it.
 - **Data file exists but is empty or malformed**: Warn the user and offer to re-run `/collect-info`.
-- **User wants to delete saved data**: Tell them: "To remove a saved file, run: `rm ./data/<id>.md`" — do not delete files yourself.
+- **User wants to delete saved data for a year**: Tell them to remove the `YEARS.<year>` block manually, or delete the whole file with `rm ./data/<id>/info.md` — do not delete files yourself.
 
 ---
 

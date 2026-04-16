@@ -245,7 +245,7 @@ DOCUMENT: ./data/{ID_NUMBER}/867_{TAX_YEAR}.pdf
 
 Show the user a summary and ask them to confirm the extracted numbers before finishing.
 
-The `DOCUMENT` field records where the PDF was saved. This path is also added to the main `./data/{ID_NUMBER}.md` data file under the relevant employer/investment section for traceability.
+The `DOCUMENT` field records where the PDF was saved. This path is also added to the main `./data/{ID_NUMBER}/info.md` data file under the relevant employer/investment section for traceability.
 
 ---
 

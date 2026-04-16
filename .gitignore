@@ -1,2 +1,4 @@
-data/
+data/*
+!data/.gitkeep
+!data/README.md
 .playwright-mcp
