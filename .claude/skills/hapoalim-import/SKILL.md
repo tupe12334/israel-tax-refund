@@ -215,37 +215,11 @@ If the user has multiple bank accounts, the form may show a dropdown to select a
 
 ## STEP 9 — OUTPUT RESULT
 
-Return structured output for use in `collect-info`:
-
-### If no investment income:
-```
-=== HAPOALIM_IMPORT START ===
-TAX_YEAR: {TAX_YEAR}
-BANK: בנק הפועלים (12)
-
-INVESTMENT_INCOME: NONE
-# Form 867 certified: no taxable events in {TAX_YEAR}
-DOCUMENT: ./data/{ID_NUMBER}/867_{TAX_YEAR}.pdf
-=== HAPOALIM_IMPORT END ===
-```
-
-### If investment income exists:
-```
-=== HAPOALIM_IMPORT START ===
-TAX_YEAR: {TAX_YEAR}
-BANK: בנק הפועלים (12)
-
-INVESTMENT_INCOME:
-  - institution: בנק הפועלים
-    income: {הכנסה חייבת}
-    tax_withheld: {ניכוי מס במקור}
-DOCUMENT: ./data/{ID_NUMBER}/867_{TAX_YEAR}.pdf
-=== HAPOALIM_IMPORT END ===
-```
+Return structured output for use in `collect-info`. Wrap the payload between `=== HAPOALIM_IMPORT START ===` and `=== HAPOALIM_IMPORT END ===`. Include `TAX_YEAR`, the populated `INVESTMENT_INCOME` section following the `./data/example/<year>.md` layout (or `INVESTMENT_INCOME: NONE` when Form 867 certifies no taxable events), and `DOCUMENT: <pdf path>`.
 
 Show the user a summary and ask them to confirm the extracted numbers before finishing.
 
-The `DOCUMENT` field records where the PDF was saved. This path is also added to the main `./data/{ID_NUMBER}/info.md` data file under the relevant employer/investment section for traceability.
+The `DOCUMENT` field records where the PDF was saved.
 
 ---
 

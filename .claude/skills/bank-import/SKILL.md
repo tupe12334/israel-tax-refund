@@ -143,18 +143,7 @@ Bank details are shared across all years — write them as plain YAML (no markdo
 
 ### Return structured output
 
-Return the following block so the calling skill (`collect-info`) can parse it:
-
-```
-=== BANK_IMPORT START ===
-BANK:
-  bank_number: <N>
-  bank_name: <Hebrew name>
-  branch_number: <NNN>
-  account_number: <account>
-  account_holder: <name as it appears on the bank portal>
-=== BANK_IMPORT END ===
-```
+Emit a `BANK:` block that mirrors `./data/example/bank.yaml`, wrapped between `=== BANK_IMPORT START ===` and `=== BANK_IMPORT END ===`, so the caller (`collect-info`) can parse it.
 
 ---
 

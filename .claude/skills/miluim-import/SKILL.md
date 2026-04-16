@@ -121,23 +121,7 @@ If the certificate page is not found or the download fails, skip silently and co
 
 ## STEP 6 — UPDATE TAX DATA FILE
 
-Find the user's data file at `./data/<id>/info.md`. Update or add the `reserve_duty` section under `INCOME:`.
-
-**If `INCOME: PENDING` exists as a single line**, replace it with a proper section block preserving any other income already collected.
-
-The `reserve_duty` block should look like this:
-
-```yaml
-reserve_duty:
-  income: NNNN     # total reserve duty pay in ILS
-  tax_withheld: NN # tax withheld at source in ILS
-  year: YYYY
-```
-
-If a certificate PDF was saved, add:
-```yaml
-  document: ./data/<id>/miluim_service_certificate.pdf
-```
+Update `./data/<id>/<year>.md` under `NII_BENEFITS.reserve_duty` following the schema in `./data/README.md` (see `./data/example/<year>.md` for the exact shape). Preserve every other section already in the file. If a certificate PDF was saved, record it via the `document:` field defined in the schema.
 
 Write the updated file immediately after confirming the values with the user.
 
@@ -145,20 +129,7 @@ Write the updated file immediately after confirming the values with the user.
 
 ## STEP 7 — OUTPUT RESULT BLOCK
 
-After saving, output a structured block for use by `collect-info` or other skills:
-
-```
-=== MILUIM_IMPORT START ===
-tax_year: YYYY
-reserve_duty_income: NNNN
-reserve_duty_tax_withheld: NN
-=== MILUIM_IMPORT END ===
-```
-
-If a certificate was saved, include:
-```
-document: ./data/<id>/miluim_service_certificate.pdf
-```
+After saving, output a structured block for use by `collect-info` or other skills. Wrap the payload between `=== MILUIM_IMPORT START ===` and `=== MILUIM_IMPORT END ===`: include `tax_year` plus the `reserve_duty` fields defined under `NII_BENEFITS` in `./data/example/<year>.md`, and append `document: <path>` when a certificate PDF was saved.
 
 Tell the user:
 > "✓ Reserve duty data saved. Income: [N] ILS, Tax withheld: [N] ILS for [year]."

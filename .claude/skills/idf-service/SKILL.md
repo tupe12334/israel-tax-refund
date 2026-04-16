@@ -264,27 +264,7 @@ If the user corrects any value, update it immediately before proceeding.
 
 ## STEP 8 — UPDATE TAX DATA FILE
 
-Find the user's data file at `./data/<id>/info.md`. Under the `TAX_CREDITS:` section, update or add the `military` entry with the confirmed data.
-
-**If `TAX_CREDITS: PENDING` exists as a single line**, replace it with a proper section block that preserves any other credits already collected.
-
-**If `military:` already exists under `TAX_CREDITS:`**, update it in place (overwrite only the military sub-section).
-
-The `military` block should look like this:
-
-```yaml
-military:
-  service_start: MM/YYYY
-  discharge_date: MM/YYYY
-  service_months: N
-  service_type: mandatory     # mandatory | national | career | none
-  extra_credit_points: N.0    # for the primary TAX_YEAR
-```
-
-If a discharge certificate PDF was saved, also add a `document:` reference under the military block:
-```yaml
-  document: ./data/<id>/idf_discharge_certificate.pdf
-```
+Update `./data/<id>/<year>.md` under `TAX_CREDITS.military` following the schema in `./data/README.md` (see `./data/example/<year>.md` for the exact shape). If `military:` already exists, overwrite only that sub-section; preserve the rest of `TAX_CREDITS`. If a discharge certificate PDF was saved, record it via the `document:` field defined in the schema.
 
 Write the updated file immediately after the user confirms the summary.
 
@@ -292,23 +272,7 @@ Write the updated file immediately after the user confirms the summary.
 
 ## STEP 9 — OUTPUT RESULT BLOCK
 
-After saving, output a structured block for use by `collect-info` or other skills:
-
-```
-=== IDF_IMPORT START ===
-service_start: MM/YYYY
-discharge_date: MM/YYYY
-service_months: N
-service_type: mandatory
-extra_credit_points: N.0
-TAX_YEAR: YYYY
-=== IDF_IMPORT END ===
-```
-
-If a document was saved, include:
-```
-document: ./data/<id>/idf_discharge_certificate.pdf
-```
+After saving, output a structured block for use by `collect-info` or other skills. Wrap the payload between `=== IDF_IMPORT START ===` and `=== IDF_IMPORT END ===`: include `TAX_YEAR` plus the `military` fields defined in `./data/example/<year>.md`, and append `document: <path>` when a certificate PDF was saved.
 
 Tell the user:
 > "✓ IDF service data saved. Your [N]-month service (discharged [MM/YYYY]) gives you [N] extra tax credit point(s) for [year]."

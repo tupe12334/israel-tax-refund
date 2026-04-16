@@ -284,23 +284,7 @@ Accept corrections year-by-year before writing to disk.
 
 ## STEP 11 — WRITE TO `<year>.md`
 
-Read `./data/README.md` (schema reference) first. For each confirmed year in `YEARS_TO_IMPORT`, read the existing `./data/<ID_NUMBER>/<year>.md` (if it exists) with the Read tool, replace the file's top-level `EMPLOYERS` list with the new data, preserve every other section (`NII_BENEFITS`, `TAX_CREDITS`, `DEDUCTIONS`, `SUBMISSION`, …), and rewrite the complete `<year>.md`. Personal and bank data live in `info.md` and `bank.yaml` respectively — do not touch them.
-
-`EMPLOYERS` entry shape (top-level in `<year>.md`):
-
-```yaml
-EMPLOYERS:
-  - employer_index: 1
-    employer_name: <name>
-    employer_id: <9-digit id>
-    field_158_taxable_income: <int>
-    field_042_tax_withheld: <int>
-    field_045_employee_pension: <int>
-    field_218_study_fund: <int>
-    months_worked: <1–12>
-  - employer_index: 2
-    ...
-```
+Follow the schema in `./data/README.md` (use `./data/example/<year>.md` as the reference sample). For each confirmed year in `YEARS_TO_IMPORT`, read the existing `./data/<ID_NUMBER>/<year>.md` (if it exists) with the Read tool, replace the file's top-level `EMPLOYERS` list with the new data, preserve every other section, and rewrite the complete `<year>.md`. Personal and bank data live in `info.md` and `bank.yaml` respectively — do not touch them.
 
 Rules:
 - Never rewrite the `EMPLOYERS` block of a year with `SUBMISSION.status: submitted`. Preserve it and note in the output that the year was skipped.
@@ -311,32 +295,12 @@ Rules:
 
 ## STEP 12 — OUTPUT RESULT BLOCK
 
-Emit one consolidated machine-readable block covering every year imported. Downstream skills (including `collect-info`) parse this directly:
+Emit one consolidated machine-readable block between `=== FORM106_IMPORT START ===` and `=== FORM106_IMPORT END ===`. Include:
 
-```
-=== FORM106_IMPORT START ===
-FILER_ID: <ID_NUMBER>
-YEARS_IMPORTED: [<year1>, <year2>, ...]
-YEARS_SKIPPED_ALREADY_SUBMITTED: [<year>, ...]   # omit line if empty
-YEARS_SKIPPED_USER_CHOICE: [<year>, ...]         # omit line if empty
+- `FILER_ID`, `YEARS_IMPORTED`, and (when non-empty) `YEARS_SKIPPED_ALREADY_SUBMITTED` and `YEARS_SKIPPED_USER_CHOICE`.
+- A `YEARS:` map. Each year's `EMPLOYERS` list follows the shape in `./data/example/<year>.md`.
 
-YEARS:
-  <year1>:
-    EMPLOYERS:
-      - employer_index: 1
-        employer_name: <name>
-        employer_id: <emp_id>
-        field_158_taxable_income: <int>
-        field_042_tax_withheld: <int>
-        field_045_employee_pension: <int>
-        field_218_study_fund: <int>
-        months_worked: <int>
-      ...
-  <year2>:
-    EMPLOYERS:
-      ...
-=== FORM106_IMPORT END ===
-```
+Downstream skills (including `collect-info`) parse this directly.
 
 Tell the user:
 
