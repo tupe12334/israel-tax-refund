@@ -256,76 +256,7 @@ Parse the returned `BANK_IMPORT` block and write it to `./data/<id_number>/bank.
 
 ## STEP 10 — FINAL SUMMARY & CONFIRMATION
 
-Once all data is collected, print a complete structured summary in the following format, then ask: "Please review all the details above. Is everything correct? (Yes / No — and tell me what to fix)"
-
-```
-=== TAX REFUND DATA SUMMARY ===
-
-PERSONAL:
-  id: <9-digit ID>
-  name: <full name>
-  dob: <DD/MM/YYYY>
-  phone: <05X-XXXXXXX>
-  email: <email>
-  marital_status: <single|married|divorced|widowed>
-
-BANK (shared across all years):
-  bank_number: <N>
-  bank_name: <name>
-  branch_number: <NNN>
-  account_number: <account>
-  account_holder: <name>
-
-YEAR: <year>
-
-  SPOUSE (if applicable):
-    id: <ID>
-    name: <name>
-    dob: <DOB>
-
-  EMPLOYERS:
-    - employer_index: 1
-      field_158_taxable_income: <amount>
-      field_042_tax_withheld: <amount>
-      field_045_employee_pension: <amount>
-      months_worked: <1-12>
-    (repeat for each employer)
-
-  SPOUSE_EMPLOYERS (if applicable):
-    (same structure)
-
-  NII_BENEFITS:
-    unemployment:  { income: <amount>, tax_withheld: <amount> }
-    maternity:     { income: <amount>, tax_withheld: <amount> }
-    reserve_duty:  { income: <amount>, tax_withheld: <amount> }
-    work_injury:   { income: <amount>, tax_withheld: <amount> }
-
-  INVESTMENT_INCOME:
-    - institution: <name>
-      income: <amount>
-      tax_withheld: <amount>
-
-  TAX_CREDITS:
-    children:
-      - birth_year: <YYYY>
-        benefit_recipient: <primary|spouse>
-    oleh: { aliyah_date: <MM/YYYY> }
-    military: { discharge_date: <MM/YYYY>, service_months: <N> }
-    academic: { degree_type: <BA|BSc|teaching|other>, graduation_year: <YYYY> }
-    development_area: { settlement: <name> }
-    disability: { who: <self|child|dependent>, percentage: <N> }
-    single_parent: <true|false>
-
-  DEDUCTIONS:
-    donations:
-      - institution: <name>
-        amount: <NIS amount>
-    pension_direct:
-      - institution: <name>
-        annual_amount: <NIS amount>
-
-=== END OF SUMMARY ===
-```
+Once all data is collected, print a complete structured summary that mirrors the schema in `./data/README.md` (see `./data/example/info.md`, `./data/example/bank.yaml`, and `./data/example/<year>.md` for the exact shape). Include only the sections that were populated. Then ask: "Please review all the details above. Is everything correct? (Yes / No — and tell me what to fix)"
 
 After the user confirms, read the existing `./data/<id_number>/info.md`, merge in the confirmed year data under `YEARS.<year>`, and write the complete file (preserving all other years).
 

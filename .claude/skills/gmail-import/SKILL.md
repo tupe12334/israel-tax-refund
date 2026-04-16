@@ -72,91 +72,26 @@ Query G — Broad tax fallback:
 
 ### 2. Deduplicate all message IDs returned across all queries.
 
-### 3. For each unique message ID, call gmail_read_message and extract the following fields. Tag each message with which query category found it (A–G).
+### 3. For each unique message ID, call gmail_read_message and extract data. Tag each message with the query category that found it (A–G).
 
-Extraction targets:
-  FORM_106 (tag: A):
-    - employer_name (שם המעסיק)
-    - employer_id (ח.פ. / מספר מעסיק — 9 digits)
-    - field_158 (הכנסה חייבת — taxable income)
-    - field_042 (מס הכנסה שנוכה — income tax withheld)
-    - field_045 (הפקדות עובד לקצבה — employee pension contribution)
-    - months_worked (חודשי עבודה)
+The fields to extract correspond one-to-one to the sections populated in `./data/example/info.md` and `./data/example/<year>.md`:
 
-  FORM_867 (tag: B):
-    - institution_name
-    - taxable_income (הכנסה חייבת)
-    - tax_withheld (מס שנוכה / ניכוי מס במקור)
+- **FORM_106** (tag A) → the `EMPLOYERS` entry shape (employer_name, employer_id, field_158, field_042, field_045, months_worked).
+- **FORM_867** (tag B) → `INVESTMENT_INCOME` entries (institution_name, taxable_income, tax_withheld).
+- **NII_BENEFITS** (tag C) → any of `unemployment`, `maternity`, `reserve_duty`, `work_injury` (income, tax_withheld).
+- **DONATIONS** (tag D) → `DEDUCTIONS.donations` entries (charity_name, amount).
+- **PENSION_DIRECT** (tags E, F) → `DEDUCTIONS.pension_direct` entries (direct payments only, not payroll deductions).
+- **PERSONAL** (any tag, opportunistic) → `PERSONAL.name`, `PERSONAL.id`, `PERSONAL.phone`.
 
-  NII_BENEFITS (tag: C) — for each benefit type found:
-    - benefit_type: one of [unemployment, maternity, reserve_duty, work_injury]
-    - income
-    - tax_withheld
+### 4. Return a structured report.
 
-  DONATIONS (tag: D):
-    - charity_name (שם המוסד / שם העמותה)
-    - amount
-
-  PENSION_DIRECT (tags: E, F) — direct payments only, not payroll deductions:
-    - institution_name
-    - annual_amount
-
-  PERSONAL (any tag) — opportunistic:
-    - full_name
-    - israeli_id (9-digit)
-    - phone
-
-### 4. Return a structured report in EXACTLY this format:
-
-SCAN_COMPLETE
-TAX_YEAR: {SCAN_YEAR}
-EMAILS_FOUND: <total unique count>
-
-FORM_106:
-  - employer_name: <name>
-    employer_id: <id or UNKNOWN>
-    field_158: <number or UNKNOWN>
-    field_042: <number or UNKNOWN>
-    field_045: <number or UNKNOWN>
-    months_worked: <number or UNKNOWN>
-  (one entry per employer; omit section if none found)
-
-FORM_867:
-  - institution_name: <name>
-    taxable_income: <number or UNKNOWN>
-    tax_withheld: <number or UNKNOWN>
-  (omit section if none found)
-
-NII_BENEFITS:
-  unemployment: { income: <number or UNKNOWN>, tax_withheld: <number or UNKNOWN> }
-  maternity:    { income: <number or UNKNOWN>, tax_withheld: <number or UNKNOWN> }
-  reserve_duty: { income: <number or UNKNOWN>, tax_withheld: <number or UNKNOWN> }
-  work_injury:  { income: <number or UNKNOWN>, tax_withheld: <number or UNKNOWN> }
-  (omit entire benefit line if not found at all)
-
-DONATIONS:
-  - charity_name: <name>
-    amount: <number or UNKNOWN>
-  (omit section if none found)
-
-PENSION_DIRECT:
-  - institution_name: <name>
-    annual_amount: <number or UNKNOWN>
-  (omit section if none found)
-
-PERSONAL:
-  full_name: <name or UNKNOWN>
-  israeli_id: <id or UNKNOWN>
-  phone: <phone or UNKNOWN>
-
-UNCERTAIN:
-  <list any message subjects where you found the email but could not extract clear data>
+First line: `SCAN_COMPLETE`. Follow with `TAX_YEAR: {SCAN_YEAR}` and `EMAILS_FOUND: <count>`. Then emit the populated sections using the same layout as `./data/example/info.md` and `./data/example/<year>.md`. End with an `UNCERTAIN:` list naming any message subjects where data could not be extracted.
 
 Rules:
 - Strip all currency symbols and commas from monetary values — output plain numbers only.
-- Use UNKNOWN for fields you could not extract (do not guess).
-- If multiple Form 106 emails exist for the same employer, use the most recent; list the duplicate under UNCERTAIN.
-- Do not include any commentary, greeting, or explanation — output ONLY the structured report above.
+- Use `UNKNOWN` for individual fields you could not extract (do not guess). Omit a section entirely if it found nothing.
+- If multiple Form 106 emails exist for the same employer, use the most recent and list the duplicate under `UNCERTAIN`.
+- Do not include any commentary, greeting, or explanation — output ONLY the structured report.
 ```
 
 ---
@@ -215,47 +150,10 @@ Accept corrections and update the extracted data accordingly before proceeding.
 
 ## STEP 6 — OUTPUT PREFILL BLOCK
 
-Output the following block as the final output of this skill. The `collect-info` skill reads this block to pre-populate the interview. Omit any section or field that has no confirmed data (do not output `UNKNOWN` values in the block).
+Output the final prefill payload wrapped between `=== GMAIL_PREFILL START ===` and `=== GMAIL_PREFILL END ===`. `collect-info` parses this to pre-populate the interview.
 
-```
-=== GMAIL_PREFILL START ===
-TAX_YEAR: {SCAN_YEAR}
+Contents:
+- `TAX_YEAR: {SCAN_YEAR}` on its own line.
+- The confirmed sections only — `PERSONAL`, `EMPLOYERS`, `INVESTMENT_INCOME`, `NII_BENEFITS`, `DEDUCTIONS` — each following the layout in `./data/example/info.md` and `./data/example/<year>.md`. Always include `PERSONAL.email: {GMAIL_ADDRESS}` when available.
 
-PERSONAL:
-  name: {full_name if confirmed}
-  id: {israeli_id if confirmed}
-  phone: {phone if confirmed}
-  email: {GMAIL_ADDRESS}
-
-EMPLOYERS:
-  - employer_name: {name}
-    employer_id: {id}
-    field_158_taxable_income: {amount}
-    field_042_tax_withheld: {amount}
-    field_045_employee_pension: {amount}
-    months_worked: {N}
-  (repeat per employer — omit section entirely if no employer data)
-
-INVESTMENT_INCOME:
-  - institution: {name}
-    income: {amount}
-    tax_withheld: {amount}
-  (omit section if no data)
-
-NII_BENEFITS:
-  unemployment:  { income: {amount}, tax_withheld: {amount} }
-  maternity:     { income: {amount}, tax_withheld: {amount} }
-  reserve_duty:  { income: {amount}, tax_withheld: {amount} }
-  work_injury:   { income: {amount}, tax_withheld: {amount} }
-  (omit individual lines with no data)
-
-DEDUCTIONS:
-  donations:
-    - institution: {name}
-      amount: {amount}
-  pension_direct:
-    - institution: {name}
-      annual_amount: {amount}
-  (omit sections with no data)
-=== GMAIL_PREFILL END ===
-```
+Omit any section, entry, or field that has no confirmed data — do not emit `UNKNOWN` values.
