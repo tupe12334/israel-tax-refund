@@ -8,6 +8,7 @@ data/
 ├── README.md             # This file — canonical schema reference (read this before any filer file)
 └── <id>/                 # One directory per filer, named after the 9-digit Israeli ID number
     ├── info.md           # Personal data shared across all years
+    ├── bank.md           # Bank account for refund deposit — shared across all years
     ├── <year>.md         # Year-specific tax data (e.g. 2024.md, 2023.md)
     ├── session.md        # Login session state (written by the login skill)
     ├── submission.md     # Form 135 submission state (written by the form-fill skill)
@@ -33,6 +34,25 @@ PERSONAL:
   phone: <05X-XXXXXXX>
   email: <email address>
   marital_status: <single|married|divorced|widowed>
+```
+````
+
+---
+
+## Schema — `<id>/bank.md`
+
+Holds the refund deposit account. Shared across all years — the Tax Authority deposits every year's refund into the same account.
+
+````markdown
+# Bank Account — <name>
+
+```tax-data
+BANK:
+  bank_number: <Israeli bank code>
+  bank_name: <name>
+  branch_number: <NNN>
+  account_number: <account>
+  account_holder: <name>
 ```
 ````
 
@@ -106,13 +126,6 @@ DEDUCTIONS:
     - institution: <name>
       annual_amount: <NIS>
 
-BANK:
-  bank_number: <Israeli bank code>
-  bank_name: <name>
-  branch_number: <NNN>
-  account_number: <account>
-  account_holder: <name>
-
 SUBMISSION:                            # written by form-fill after filing; omit until then
   status: <submitted|failed>
   confirmation_number: <ref>
@@ -124,7 +137,8 @@ SUBMISSION:                            # written by form-fill after filing; omit
 
 1. **Read `./data/README.md` first** to get the current schema before reading or writing any filer file.
 2. `PERSONAL` data lives in `info.md` and is shared across all years.
-3. Year-specific data (income, credits, deductions, bank, submission) lives in `<year>.md`.
-4. `SUBMISSION` is only written by `form-fill` after successful filing. `status: submitted` means that year is done.
-5. When saving a year file, read the existing `<year>.md` first (if it exists) to avoid overwriting data, then rewrite the complete file.
-6. Supporting documents live in `./<id>/`. Reference them by filename only in `document:` fields.
+3. `BANK` data lives in `bank.md` and is shared across all years. The same refund account is used for every year.
+4. Year-specific data (income, credits, deductions, submission) lives in `<year>.md`.
+5. `SUBMISSION` is only written by `form-fill` after successful filing. `status: submitted` means that year is done.
+6. When saving a year file, read the existing `<year>.md` first (if it exists) to avoid overwriting data, then rewrite the complete file.
+7. Supporting documents live in `./<id>/`. Reference them by filename only in `document:` fields.

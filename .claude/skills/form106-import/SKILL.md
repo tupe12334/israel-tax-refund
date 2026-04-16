@@ -1,12 +1,12 @@
 ---
 name: form106-import
-description: Uses Playwright to log in to the Israeli Tax Authority (Misim) portal, retrieve all Form 106 (טופס 106) employer salary certificates for a given tax year, download the PDFs, and extract key fields (158, 042, 045, employer name/ID, months worked) for the tax refund interview. Run during the collect-info flow to auto-populate the employment income section.
-allowed-tools: mcp__playwright__browser_navigate mcp__playwright__browser_snapshot mcp__playwright__browser_click mcp__playwright__browser_take_screenshot mcp__playwright__browser_run_code mcp__playwright__browser_wait_for mcp__playwright__browser_type mcp__playwright__browser_fill_form mcp__playwright__browser_press_key mcp__playwright__browser_close Bash(ls *) Bash(mkdir *) Read Write Skill(chrome-credentials)
+description: Uses Playwright to log in to the Israeli Tax Authority (Misim) portal and retrieve every available Form 106 (טופס 106) employer salary certificate. Defaults to importing ALL years the portal exposes (usually 2017 forward, up to 9 years) in a single run — downloads each PDF and extracts fields 158, 042, 045, 218, employer name/ID, and months worked. Accepts an optional year filter for a single year or subset. Run during the collect-info flow to auto-populate the employment income section across multiple years in one pass.
+allowed-tools: mcp__playwright__browser_navigate mcp__playwright__browser_snapshot mcp__playwright__browser_click mcp__playwright__browser_take_screenshot mcp__playwright__browser_evaluate mcp__playwright__browser_tabs mcp__playwright__browser_wait_for mcp__playwright__browser_type mcp__playwright__browser_fill_form mcp__playwright__browser_press_key mcp__playwright__browser_close Bash(ls *) Bash(mkdir *) Bash(python3 *) Bash(find *) Bash(rm *) Read Write Skill(chrome-credentials)
 ---
 
-You are an automation assistant that retrieves Israeli employer salary certificates (Form 106 / טופס 106) from the Israeli Tax Authority (Misim / רשות המסים) portal using Playwright.
+You are an automation assistant that retrieves Israeli employer salary certificates (Form 106 / טופס 106 — nispach ב') from the Israeli Tax Authority (Misim / רשות המסים) portal.
 
-Your goal: authenticate on the Misim portal, navigate to the Form 106 query service, extract all employer records for the requested tax year, download their PDFs, and return structured data ready for the `collect-info` skill.
+**Default behaviour: download every year the portal exposes.** The "טפסי 106" page lists each available tax year as a collapsible card (typically 2017 forward — up to 9 years). In one run this skill iterates over every year with data, downloads each employer's PDF, extracts the key fields, and merges the results into `YEARS.<year>.EMPLOYERS` in `info.md`. If the user requests a specific year (or a subset), scope to those only.
 
 Detect the user's language from their first message and respond in it throughout (Hebrew or English).
 
@@ -14,7 +14,7 @@ Detect the user's language from their first message and respond in it throughout
 
 ## PREREQUISITES CHECK
 
-Before starting, verify the Playwright MCP server is available by checking if `mcp__playwright__browser_navigate` is in your allowed tools. If not, tell the user:
+Verify the Playwright MCP server is available. If `mcp__playwright__browser_navigate` isn't in scope, tell the user:
 
 > "The Playwright MCP server is required for this skill. Add it to `.mcp.json`:
 > ```json
@@ -22,400 +22,325 @@ Before starting, verify the Playwright MCP server is available by checking if `m
 > ```
 > Then restart Claude Code and try again."
 
-Also check if a lingering Chrome process may be blocking the browser. If navigation later fails with "Browser is already in use", run:
+If navigation later fails with "Browser is already in use":
 ```bash
 pkill -f "mcp-chrome" && sleep 2
 ```
-Then retry navigation.
+Then retry.
 
 ---
 
-## STEP 1 — FIND EXISTING DATA
+## STEP 1 — LOCATE THE FILER DIRECTORY
 
-Read the `./data/` directory:
+List `./data/`:
 ```bash
 ls -1 ./data/
 ```
 
-Look for a directory named with a 9-digit ID (not `draft`). If found, read `<id>/info.md` and check:
-- Whether `EMPLOYERS` is already populated (not `PENDING` and not empty).
-- The `TAX_YEAR` field.
+Find a directory named with a 9-digit Israeli ID (ignore `draft`, `README.md`, `.gitkeep`). Read `<id>/info.md` and record:
+- `ID_NUMBER` — the 9-digit directory name (also the filer's ת.ז.)
+- `PERSONAL.name` — for logging and portal-heading cross-check
+- The list of years under `YEARS:` that already have `EMPLOYERS` populated
 
-- **If EMPLOYERS already populated:** Show the user the existing employer data and ask:
-  > "Form 106 data already exists for [year] — would you like to keep it or refresh it from the Tax Authority portal?"
-  - If keep → skip to STEP 9 and output existing data.
-  - If refresh → continue to STEP 2.
-- **If not populated or file not found:** Continue to STEP 2.
-
-Extract `TAX_YEAR` from the file (or ask if no file found). Extract `ID_NUMBER` and `PHONE` if available. Store as `TAX_YEAR`, `ID_NUMBER`, `PHONE`.
+If no ID directory exists, ask the user for their 9-digit ID so the skill knows where to save PDFs. Create the directory later with `mkdir -p` when a PDF is first written.
 
 ---
 
-## STEP 2 — CONFIRM TAX YEAR
+## STEP 2 — DETERMINE SCOPE
 
-If `TAX_YEAR` is already known, confirm with the user:
-> "I'll retrieve Form 106 data for tax year [TAX_YEAR] — is that correct?"
+Parse the user's request into `SCOPE`:
 
-If unknown, ask:
-> "Which tax year would you like to import Form 106 for? (e.g., 2022)"
+- `all` — default when the user says "all", "every year", or gives no year argument. The skill will import every year the portal shows that has at least one employer record.
+- A single year (e.g. `2023`) — import only that year.
+- A list of years (e.g. `2022, 2023, 2024`) — import only those.
 
-Valid range: 2019–2024. Store as `TAX_YEAR`.
+Then compare `SCOPE` against the years already saved in `info.md`. If any years overlap, ask once for the whole overlap:
 
----
+> "I already have Form 106 data saved for [year list]. Overwrite them with fresh data from the portal? (yes / skip)"
 
-## STEP 3 — TRY AUTO-FILL WITH CHROME CREDENTIALS
+- `yes` (default) → include these years in the refresh.
+- `skip` → remove them from `SCOPE`.
 
-Before opening the portal, attempt to retrieve saved Misim credentials from Chrome by calling the `chrome-credentials` skill with domain `misim.gov.il`.
+Years whose `YEARS.<year>.SUBMISSION.status` is `submitted` must never be overwritten automatically — always skip those and list them in the final output as "already filed, data preserved".
 
-- **If credentials are found:** Store `MISIM_ID` and `MISIM_PASSWORD` for use in Step 5. Tell the user:
-  > "Found saved Misim credentials in Chrome — I'll use them to log in automatically."
-- **If not found or the skill fails:** Continue to Step 4 with manual login. Do not block.
+Tell the user what you're about to do:
 
----
-
-## STEP 4 — OPEN MISIM PORTAL
-
-Navigate to the Tax Authority portal:
-```
-https://www.misim.gov.il/
-```
-
-Take a screenshot to confirm the page loaded.
-
-Take a page snapshot to find the login entry point. Look for:
-- "כניסה לאזור האישי" / "כניסה" / "הזדהות" button or link
-- Alternatively a direct login entry at `https://www.misim.gov.il/emdvhmhdbdmhvsf/` which may redirect to login
-
-Click the personal area login entry point.
+> "I'll import Form 106 for: [year list]. Logging in to Misim now."
 
 ---
 
-## STEP 5 — AUTHENTICATE
+## STEP 3 — AUTO-FILL WITH CHROME CREDENTIALS
 
-The Misim portal supports login with Israeli ID + password + SMS OTP.
+Call `chrome-credentials` inline with site `misim.gov.il`. The skill's alias map expands the search to the hosts where Misim credentials are actually saved (`secapp.taxes.gov.il`, `login.gov.il`, `account.gov.il`, `shaam`, …).
 
-Take a snapshot to identify the login fields.
+- Credentials returned → store `MISIM_ID` (9-digit ת.ז.) and `MISIM_PASSWORD` (קוד משתמש קבוע, the "permanent user code"). Tell the user:
+  > "Found saved Misim credentials in Chrome — I'll fill them in automatically."
+- Nothing returned → continue to Step 4 without auto-fill. Do not block.
 
-### If credentials were found in Step 3 (auto-fill mode):
-
-1. Fill the ID field with `MISIM_ID` using `browser_type`.
-2. Fill the password field with `MISIM_PASSWORD` using `browser_type`.
-3. Click the submit / login button.
-4. Tell the user:
-   > "I've filled your credentials from Chrome — please complete the OTP step in the browser window."
-
-### If no saved credentials (manual mode):
-
-Tell the user:
-> "The Misim login page is open. Please type your Israeli ID (ת.ז.) and password directly in the browser window, then let me know when you've submitted them."
-
-Wait for the user to confirm credentials were submitted.
-
-### OTP step (always manual):
-
-After credential submission, the portal sends an SMS OTP to the phone registered on the user's ID.
-
-1. Take a snapshot — confirm an OTP field is visible.
-2. Tell the user:
-   > "An OTP code was sent to your registered phone. Please enter it in the browser window and confirm when done."
-3. Wait for the user to confirm OTP entry.
-
-If no OTP arrives, suggest:
-- Check the phone number registered on the account.
-- Use "שלח שוב" (resend) button if available.
-- If the registered phone number is incorrect, the user must update it at a Tax Authority office.
+Do not display the password in chat. Type it directly into the browser.
 
 ---
 
-## STEP 6 — VERIFY LOGIN SUCCESS
+## STEP 4 — OPEN PORTAL AND AUTHENTICATE
 
-After OTP confirmation:
+Navigate to:
+```
+https://secapp.taxes.gov.il/SrSherutAtzmi/#/clientMainDashboard
+```
 
-1. Take a screenshot and snapshot.
-2. Confirm authentication succeeded — look for:
-   - URL no longer contains `/login` or `/auth`
-   - A personal area heading ("האזור האישי", "ברוך הבא")
-   - A logout link visible
+If not yet authenticated, the portal redirects to `secapp.taxes.gov.il/taxes-login/login/general`. The login page has:
+- `textbox "מספר זהות"` — Israeli ID
+- `textbox "קוד משתמש קבוע"` — permanent user code
+- `button "המשך"` — submit
 
-If still on the login page or an error banner is visible, ask the user to retry. Do not proceed with data extraction until login is confirmed.
+### With saved credentials
+Type `MISIM_ID` into `מספר זהות`, type `MISIM_PASSWORD` into `קוד משתמש קבוע`, then click `המשך`.
+
+### Without saved credentials
+Ask the user to fill both fields in the browser window and click `המשך`, then wait for confirmation.
+
+### OTP step
+The portal sends an SMS OTP to the phone registered on the user's ID. Take a snapshot to locate the OTP field. If the `sms-otp` skill is available, call it inline to auto-read the code from macOS Messages and fill it in; otherwise ask the user to paste the code and submit.
 
 ---
 
-## STEP 7 — NAVIGATE TO FORM 106 QUERY SERVICE
+## STEP 5 — VERIFY LOGIN
 
-Try the following URLs in order until one loads the Form 106 data page. After each navigation, take a screenshot and check whether you've landed on a Form 106 list or a year-selection page.
+Snapshot and confirm:
+- URL no longer contains `/taxes-login` or `/login`
+- Header shows `אזור אישי` with the user's name (e.g. `שלום גבאי אופק,`)
+- A `ניתוק` (logout) link is visible
 
-### Attempt A — Direct service URL:
+If the login page is still showing, have the user retry. Do not proceed without authentication.
+
+---
+
+## STEP 6 — NAVIGATE TO THE FORM 106 PAGE
+
+Navigate directly to:
 ```
-https://www.misim.gov.il/emdvhmhdbdmhvsf/
+https://secapp.taxes.gov.il/sr-ezor-ishi/main/form106
 ```
 
-### Attempt B — Authenticated income tax portal:
-```
-https://secapp.taxes.gov.il/SrBkrHN106/flow.aspx
-```
+(Equivalent: click the "טפסי 106" card on the authenticated dashboard.)
 
-### Attempt C — Personal area navigation via UI:
-From the Misim homepage (authenticated), look for:
-- "שכר ועבודה" or "שכר" section in the left/top menu
-- Then "שאילתת טופס 106" or "נתוני שכר שנתיים"
-- Or look for "שאילתות" → "טופס 106"
+Wait for these page elements:
+- heading `"טפסי 106"` (h1)
+- subheading `"טפסי 106 של <id> - <name>"` (h2) — verify `<id>` matches `ID_NUMBER`; if not, stop and ask the user which filer directory to use.
 
-If none found via menus, try using the portal's search box (if present) with the query "טופס 106".
+Snapshot the page.
 
-### Attempt D — Gov.il authenticated service:
-```
-https://www.gov.il/he/service/itc135
-```
-Then navigate to "שאילתת נתוני שכר".
+---
 
-### If all attempts fail:
-Tell the user:
-> "I couldn't find the Form 106 query page automatically. Can you navigate to 'שאילתת טופס 106' in the portal and tell me when you're there?"
-Wait for confirmation, then continue from STEP 7b.
+## STEP 7 — DISCOVER AVAILABLE YEARS
 
-### STEP 7b — On the Form 106 page:
+Year cards are `details/summary` elements. Each summary contains an `h3` with the 4-digit year and an optional `p` with text like `"נמצאו N מעסיקים"` when the year has data. Enumerate them:
 
-Once you see a Form 106 data page (year selector or employer list):
-
-1. Take a full screenshot.
-2. Extract the page text:
 ```js
-async (page) => document.body.innerText
-```
-3. Look for:
-   - A year (שנה / שנת מס) selector or list
-   - An employer list or table
-
----
-
-## STEP 8 — SELECT TAX YEAR AND EXTRACT DATA
-
-### 8a — Select the tax year
-
-If the page shows a year selector, select `TAX_YEAR`:
-```js
-async (page) => {
-  // Try a <select> dropdown
-  const sel = document.querySelector('select[name*="year"], select[name*="shana"], select[id*="year"]');
-  if (sel) {
-    sel.value = Array.from(sel.options).find(o => o.text.includes('TAX_YEAR'))?.value;
-    sel.dispatchEvent(new Event('change', { bubbles: true }));
-    return 'selected-via-select';
-  }
-  // Try a button/link list of years
-  const btn = Array.from(document.querySelectorAll('a, button')).find(el => el.textContent.trim() === 'TAX_YEAR');
-  if (btn) { btn.click(); return 'selected-via-button'; }
-  return 'year-selector-not-found';
+async () => {
+  const summaries = Array.from(document.querySelectorAll('summary'));
+  return summaries.map(s => ({
+    year: s.querySelector('h3')?.textContent?.trim(),
+    note: s.querySelector('p')?.textContent?.trim() || ''
+  })).filter(x => /^\d{4}$/.test(x.year || ''));
 }
 ```
 
-If the year is not available, report which years are shown and ask the user to choose.
+Rules:
+- `note` matches `/נמצאו (\d+) מעסיקים/` → year has that many employers; include if in `SCOPE`.
+- `note` is empty or missing → year has no data; skip.
+- If the page shows a `button "טפסים משנים קודמות"` and `SCOPE` includes years older than the initially visible set, click it, wait for the expansion, and re-run the discovery query.
 
-After selection, click "חיפוש" or "הצג" (Search/Show) if such a button exists.
-
-Take a screenshot to confirm you see employer data.
-
-### 8b — Extract employer records from the page
-
-Extract all employer rows from the data table. Run:
-```js
-async (page) => {
-  // Common patterns for Form 106 data tables
-  const rows = Array.from(document.querySelectorAll('tr, .employer-row, [data-employer]'));
-  return rows.map(r => r.innerText).filter(t => t.trim().length > 0);
-}
-```
-
-Also extract the full page text as a fallback:
-```js
-async (page) => document.body.innerText
-```
-
-### 8c — Parse employer data
-
-For each employer visible on the page, extract:
-
-| Field | Label | Notes |
-|---|---|---|
-| Employer name | שם המעסיק | Free text |
-| Employer ID | מספר מעסיק / ח.פ. | 9-digit number |
-| Field 158 | הכנסה חייבת | Taxable income (gross) |
-| Field 042 | מס הכנסה שנוכה | Income tax withheld |
-| Field 045 | הפקדות עובד לקצבה | Employee pension contribution |
-| Field 046 | הפקדות עובד לקרן השתלמות | Employee study fund (keren hishtalmut) |
-| Field 047 | הפקדות מעביד לקרן השתלמות | Employer study fund (keren hishtalmut) |
-| Field 048 | הפקדות מעביד לקצבה | Employer pension contribution |
-| Months worked | חודשי עבודה | 1–12 |
-
-If the portal shows a summary table with key fields but not all of them, note which fields are UNKNOWN — the PDF will contain the full set.
+Store as `YEARS_TO_IMPORT` — the intersection of `SCOPE` and years that actually have data. Report to the user: "Found Form 106 data for [year list] — downloading now."
 
 ---
 
-## STEP 9 — DOWNLOAD FORM 106 PDF(S)
+## STEP 8 — DOWNLOAD PDFs (OUTER LOOP — PER YEAR)
 
-For each employer, attempt to download the Form 106 PDF:
+Iterate `YEARS_TO_IMPORT` newest → oldest. For each `<year>`:
 
-```js
-async (page) => {
-  // Look for PDF download / print buttons per employer row
-  const pdfButtons = Array.from(document.querySelectorAll(
-    'a[href*=".pdf"], a[href*="download"], button[aria-label*="הורד"], ' +
-    'button[title*="הדפס"], a[title*="טופס 106"], .pdf-btn, [data-action="download"]'
-  ));
-  return pdfButtons.map(b => ({ text: b.textContent?.trim(), href: b.href, tag: b.tagName }));
-}
-```
+### 8a. Expand the year card
 
-For each PDF download button found:
-1. Set up a download listener:
-```js
-async (page) => {
-  const downloadDir = './data/ID_NUMBER';
-  const fileName = `106_TAX_YEAR_EMPLOYER_INDEX.pdf`;
+Take a snapshot, find the `summary` whose visible text starts with `<year>`, click it. The expansion reveals:
+- A combined-summary box: `משכורות ותשלומים` (sum of 158) and `סכום מס הכנסה` (sum of 042). Record these as `portal_totals[<year>]` for cross-checking after PDF parsing.
+- One section per employer with `שם המעביד`, `תיק ניכויים` (9-digit employer id), and a button `להצגת טופס 106`.
+- Optional `למסמך ריכוז הכנסות` button at the top of the year.
 
-  const downloadPromise = page.waitForEvent('download', { timeout: 20000 });
-  // Click the download button — pass the button selector specific to this employer
-  const btn = document.querySelector('/* employer-specific selector */');
-  if (btn) btn.click();
+### 8b. Enumerate employers
 
-  try {
-    const download = await downloadPromise;
-    await download.saveAs(`${downloadDir}/${fileName}`);
-    return { saved: `${downloadDir}/${fileName}` };
-  } catch (e) {
-    return { error: String(e) };
-  }
-}
-```
+For the expanded card, collect `{ employer_name, employer_id, button_ref }` for every `להצגת טופס 106` button inside this year's section. Do not confuse with buttons from other years — match on DOM ancestry of the specific `details` element.
 
-After each successful download:
-- Run `mkdir -p ./data/ID_NUMBER` to ensure the directory exists.
-- Confirm the file saved: `./data/<ID_NUMBER>/106_<TAX_YEAR>_<N>.pdf`
-- Tell the user: "(saved: `./data/<ID_NUMBER>/106_<TAX_YEAR>_<N>.pdf`)"
+### 8c. Download each employer's PDF (INNER LOOP)
 
-If downloading fails (no download button found, or download times out):
-- Take a full-page screenshot of the employer's Form 106 record.
-- Read the screenshot visually and extract whatever fields are visible.
-- Note the missing PDF in the output block.
+For each employer indexed `N = 1..K`:
+
+1. Click the employer's `להצגת טופס 106` button. The portal opens a new tab (index 1) with a `blob:` URL containing the PDF.
+2. `browser_tabs` → `select` index `1`.
+3. Save the PDF bytes without pulling them through your context. Call `browser_evaluate` and pass a `filename` parameter so the result streams to disk:
+
+   ```js
+   async () => {
+     const resp = await fetch(window.location.href);
+     const buf = await resp.arrayBuffer();
+     const bytes = new Uint8Array(buf);
+     let binary = '';
+     for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+     return { size: buf.byteLength, b64: btoa(binary) };
+   }
+   ```
+
+   Pass `filename: "_form106_<year>_<N>.b64.txt"` — this writes the evaluate result to a file under the Playwright working directory and keeps the base64 out of chat context. **Never omit `filename` here**; a 60 KB PDF encoded inline will blow past the tool-result token limit.
+
+4. Decode and save the PDF to the filer directory, then remove the temp file:
+
+   ```bash
+   python3 - <<'PY'
+   import re, base64, glob, sys
+   src_matches = glob.glob('**/_form106_<year>_<N>.b64.txt', recursive=True)
+   if not src_matches:
+       sys.exit("no b64 file found")
+   src = src_matches[0]
+   dst = "./data/<ID_NUMBER>/106_<year>_<N>.pdf"
+   text = open(src).read()
+   m = re.search(r'"b64"\s*:\s*"([^"]+)"', text)
+   if not m:
+       sys.exit("no b64 payload in " + src)
+   open(dst, "wb").write(base64.b64decode(m.group(1)))
+   print(f"saved {dst}")
+   import os; os.unlink(src)
+   PY
+   ```
+
+   Run `mkdir -p ./data/<ID_NUMBER>` beforehand if this is the first write for the filer.
+
+5. `browser_tabs` → `close` index `1`. Focus returns to the year-list tab automatically.
+
+### 8d. (Optional) Consolidated income summary
+
+If the user asked for the yearly summary too, click `למסמך ריכוז הכנסות`, follow the same blob-download flow, and save as `106_<year>_summary.pdf`. Skip by default to save time — the per-employer PDFs already hold every field needed for Form 135.
+
+### 8e. Collapse the year card
+
+Click the `summary` again to collapse it. This keeps the DOM small for the next iteration. If the collapse fails it's harmless — continue.
 
 ---
 
-## STEP 10 — READ PDF FOR MISSING FIELDS
+## STEP 9 — PARSE EACH DOWNLOADED PDF
 
-For each downloaded PDF, use the Read tool to open it:
+For every `./data/<ID_NUMBER>/106_<year>_<N>.pdf`, call `Read` on the PDF path. Claude Code renders the PDF visually, so you can extract the Hebrew labels directly.
 
-```
-Read ./data/<ID_NUMBER>/106_<TAX_YEAR>_<N>.pdf
-```
+The portal exports the "nispach ב'" (Appendix B) layout. Map its labels to the `info.md` schema (see `./data/README.md`):
 
-Extract any fields that were not visible in the portal's table view, particularly:
-- Field 158, 042, 045, 046, 047, 048
-- Employer name and ID (verify they match what was shown on screen)
-- Months worked
-- Any additional fields visible on the form
+| Hebrew label on the PDF | Schema field (`info.md`) |
+|---|---|
+| `שם המעביד` | `employer_name` |
+| `מס' תיק ניכויים` | `employer_id` (9 digits) |
+| Count of `V` marks in `חדשי עבודה בשנת המס` (or the `סה"כ` cell) | `months_worked` |
+| `סה"כ (158/172)` | `field_158_taxable_income` |
+| `סה"כ ניכויי מס (042)` | `field_042_tax_withheld` |
+| `הפקדות העובד לקופ"ג לקצבה (...086/045)` | `field_045_employee_pension` |
+| `בסיס להשתלמות (218/219)` | `field_218_study_fund` |
 
-If the PDF text extraction is unclear, take a screenshot of the PDF page instead.
+Rules:
+- If a row is absent from the PDF, the value is `0` — write `0`, not `UNKNOWN`. Small employers (e.g. short side gigs with no pension) commonly omit `086/045` and adjacent rows.
+- Strip currency symbols and commas before saving (`73,521 ש"ח` → `73521`).
+- Informational rows (`הכנסה מבוטחת (244/245)`, `תשלומי מעסיק לקרן השתלמות`, `בסיס לאובדן כושר`, `סכום הפרשות המעביד לקופות גמל לקצבה (248/249)`, credit points) are **not** stored in `info.md`. Ignore them unless explicitly needed downstream.
+
+After parsing every PDF for a year, verify `sum(field_158) == portal_totals[<year>].משכורות ותשלומים` and `sum(field_042) == portal_totals[<year>].סכום מס הכנסה` to ±1 ₪. If they disagree, flag the year in the final summary and ask the user to eyeball the PDFs.
 
 ---
 
-## STEP 11 — CONFIRM DATA WITH USER
+## STEP 10 — PRESENT A CONSOLIDATED SUMMARY
 
-Present the extracted data to the user for review:
+Print one block per imported year, then portal-confirmed totals so the user can cross-check. Order newest → oldest:
 
 ```
-=== Form 106 Data — Tax Year TAX_YEAR ===
+=== Form 106 Import — [M] year(s), [N] employer(s) total ===
 
-Employer 1: [שם המעסיק] (ID: [ח.פ.])
-  Field 158 — Taxable income:           ₪[amount]
-  Field 042 — Income tax withheld:       ₪[amount]
-  Field 045 — Employee pension (ת.ג.):   ₪[amount]
-  Field 046 — Employee study fund:       ₪[amount]
-  Field 047 — Employer study fund:       ₪[amount]
-  Field 048 — Employer pension:          ₪[amount]
-  Months worked:                         [N]
-  PDF: ./data/[ID_NUMBER]/106_[TAX_YEAR]_1.pdf
+YEAR 2024
+  Employer 1: <name> (ID: <emp_id>)
+    Field 158 (Taxable income):   ₪<n>
+    Field 042 (Tax withheld):     ₪<n>
+    Field 045 (Employee pension): ₪<n>
+    Field 218 (Study fund basis): ₪<n>
+    Months worked:                <n>
+    PDF: ./data/<ID_NUMBER>/106_2024_1.pdf
+  [repeat per employer]
+  Year totals — income: ₪<sum 158>, tax: ₪<sum 042>   (portal: ₪<portal-summary>)
 
-[repeat for each employer]
+YEAR 2023
+  [same structure]
 
 === End ===
 ```
 
 Ask:
-> "Does this look correct? I'll use these values to update your tax data file.
-> Reply **Yes** to confirm, or point out any corrections."
 
-Accept corrections and update the data before proceeding.
+> "Does this look right? Reply **Yes** to save all years, or tell me which year/field to correct."
+
+Accept corrections year-by-year before writing to disk.
 
 ---
 
-## STEP 12 — UPDATE TAX DATA FILE
+## STEP 11 — WRITE TO `<year>.md`
 
-Find the user's data file at `./data/<ID_NUMBER>/info.md`.
+Read `./data/README.md` (schema reference) first. For each confirmed year in `YEARS_TO_IMPORT`, read the existing `./data/<ID_NUMBER>/<year>.md` (if it exists) with the Read tool, replace the file's top-level `EMPLOYERS` list with the new data, preserve every other section (`NII_BENEFITS`, `TAX_CREDITS`, `DEDUCTIONS`, `SUBMISSION`, …), and rewrite the complete `<year>.md`. Personal and bank data live in `info.md` and `bank.md` respectively — do not touch them.
 
-Update or add the `EMPLOYERS:` section with the confirmed data. If `EMPLOYERS: PENDING` exists as a single line, replace it with a proper block. Preserve all other sections.
+`EMPLOYERS` entry shape (top-level in `<year>.md`):
 
-Each employer block:
 ```yaml
 EMPLOYERS:
   - employer_index: 1
-    employer_name: [שם המעסיק]
-    employer_id: [9-digit ח.פ.]
-    field_158_taxable_income: [amount]
-    field_042_tax_withheld: [amount]
-    field_045_employee_pension: [amount]
-    field_046_employee_study_fund: [amount]
-    field_047_employer_study_fund: [amount]
-    field_048_employer_pension: [amount]
-    months_worked: [1-12]
-    document: ./data/[ID_NUMBER]/106_[TAX_YEAR]_1.pdf
+    employer_name: <name>
+    employer_id: <9-digit id>
+    field_158_taxable_income: <int>
+    field_042_tax_withheld: <int>
+    field_045_employee_pension: <int>
+    field_218_study_fund: <int>
+    months_worked: <1–12>
   - employer_index: 2
     ...
 ```
 
-If a field could not be extracted, write `UNKNOWN` (not 0).
-
-Write the updated file immediately after the user confirms.
+Rules:
+- Never rewrite the `EMPLOYERS` block of a year with `SUBMISSION.status: submitted`. Preserve it and note in the output that the year was skipped.
+- The PDF path is predictable (`./data/<ID_NUMBER>/106_<year>_<N>.pdf`); don't write a `document:` field under `EMPLOYERS` (the project schema doesn't include one there).
+- If `field_218_study_fund` is zero, omit the line — it's optional per the schema.
 
 ---
 
-## STEP 13 — OUTPUT RESULT BLOCK
+## STEP 12 — OUTPUT RESULT BLOCK
 
-After saving, output a structured block for use by `collect-info` or other skills:
+Emit one consolidated machine-readable block covering every year imported. Downstream skills (including `collect-info`) parse this directly:
 
 ```
 === FORM106_IMPORT START ===
-TAX_YEAR: YYYY
+FILER_ID: <ID_NUMBER>
+YEARS_IMPORTED: [<year1>, <year2>, ...]
+YEARS_SKIPPED_ALREADY_SUBMITTED: [<year>, ...]   # omit line if empty
+YEARS_SKIPPED_USER_CHOICE: [<year>, ...]         # omit line if empty
 
-EMPLOYERS:
-  - employer_index: 1
-    employer_name: [name]
-    employer_id: [9-digit id]
-    field_158_taxable_income: [amount]
-    field_042_tax_withheld: [amount]
-    field_045_employee_pension: [amount]
-    field_046_employee_study_fund: [amount]
-    field_047_employer_study_fund: [amount]
-    field_048_employer_pension: [amount]
-    months_worked: [N]
-    document: ./data/[ID_NUMBER]/106_[TAX_YEAR]_1.pdf
-  (repeat per employer)
+YEARS:
+  <year1>:
+    EMPLOYERS:
+      - employer_index: 1
+        employer_name: <name>
+        employer_id: <emp_id>
+        field_158_taxable_income: <int>
+        field_042_tax_withheld: <int>
+        field_045_employee_pension: <int>
+        field_218_study_fund: <int>
+        months_worked: <int>
+      ...
+  <year2>:
+    EMPLOYERS:
+      ...
 === FORM106_IMPORT END ===
 ```
 
 Tell the user:
-> "✓ Form 106 data saved for [N] employer(s) in [TAX_YEAR]."
 
----
-
-## MULTI-YEAR SUPPORT
-
-If the user wants to import Form 106 for multiple tax years:
-
-After completing one year, ask:
-> "Would you like to import Form 106 for another tax year? (e.g., 2021, 2020...)"
-
-If yes, repeat Steps 8–13 for the new year without re-authenticating (the browser session stays active). Each year's PDFs go to the same `./data/<ID_NUMBER>/` directory with the year in the filename.
+> "✓ Form 106 data saved for [N] employer(s) across [M] year(s): [year list]."
 
 ---
 
@@ -423,25 +348,27 @@ If yes, repeat Steps 8–13 for the new year without re-authenticating (the brow
 
 | Situation | Action |
 |---|---|
-| Portal unreachable / timeout | Ask user to check internet connection, retry up to 2 times |
-| Session expired mid-navigation | Detect login page redirect, tell user to re-authenticate, and resume from Step 6 |
-| Year not found in portal | Report which years are available, ask user to choose or enter data manually |
-| No employers found for the selected year | Ask: "The portal shows no Form 106 submissions for [year]. Did you work that year? If yes, you may need to contact your employer." |
-| PDF download fails | Screenshot the Form 106 page, read visually, note missing PDF in output block |
-| Portal shows maintenance / scheduled downtime | Read the message, translate if needed, tell user to try again later |
-| Browser locked ("already in use") | Run `pkill -f "mcp-chrome" && sleep 2`, then retry navigation |
-| CAPTCHA appears | Ask user to solve it in the browser, then confirm when done |
-| Chrome credentials are wrong / rejected | Fall back to manual entry, do not retry the bad credentials |
+| Portal unreachable / timeout | Ask the user to check the internet, retry up to 2 times. |
+| Session expired mid-loop (URL redirects to `/taxes-login`) | Re-run Step 4, then resume Step 8 at the next unfinished year. PDFs already saved for earlier years are kept. |
+| Year list is empty | The user has no Form 106 records at the portal. Ask them to contact each employer for a paper copy. |
+| A year shows no employer entries | Skip quietly; don't create an empty `EMPLOYERS` block. |
+| `browser_evaluate` returns a huge base64 string inline | Always pass `filename: "_form106_..."` to stream the result to disk. Re-run the evaluate with the filename if you forgot it the first time. |
+| PDF download fails for one employer (blob fetch errors, tab never opens) | Take a full-page screenshot of the expanded year card and extract fields from the on-page per-employer summary if present. Note `PDF: MISSING` for that employer in the final output. |
+| Portal maintenance banner | Translate if needed, stop, tell the user to retry later. |
+| Browser locked ("already in use") | `pkill -f "mcp-chrome" && sleep 2`, then retry navigation. |
+| CAPTCHA appears mid-flow | Ask the user to solve it in the browser window and confirm. |
+| Chrome credentials rejected | Do not retry the same password. Fall back to manual entry; tell the user to update Chrome once logged in. |
+| Portal heading ID differs from `ID_NUMBER` | Stop. The logged-in account is not the same filer as the data directory. Ask the user which directory to write to, or to log in with the correct ID. |
 
 ---
 
 ## IMPORTANT NOTES
 
-- **Never write credentials to disk.** Credentials retrieved from Chrome via `chrome-credentials` are used only in this session and never appended to any `.md` file.
-- The Playwright browser is isolated from the user's personal browser. If credentials are not saved in Chrome, the user must type them directly.
-- Form 106 PDFs are stored in `./data/<ID_NUMBER>/` for traceability and future reference. The `document:` field in the data file records the local path.
-- **Form 106 vs Form 101:** Form 106 is the *annual* salary certificate (end of year). Form 101 is the personal details form submitted at the start of employment. This skill retrieves Form 106 only.
-- If the user had a **tax coordination form (טופס 116)**, the portal may show combined income across employers — note this explicitly in the output.
-- The portal typically shows Form 106 data for the previous 6 tax years (2019–2024 as of filing year 2025).
-- Field 158 is the *taxable* income (after deductions like pension). It is lower than the gross salary. Remind the user of this if they are confused by the number.
-- **Spouse employers:** If the user is married and the spouse was also employed, a separate run of this skill for the spouse's ID is needed. Note this to the user after completing the primary filer's import.
+- **Never write credentials to disk.** Credentials returned by `chrome-credentials` live in this session only — never append them to any `.md` file.
+- **Blob downloads are the bottleneck.** Each "להצגת טופס 106" click opens a new tab with a `blob:` URL; Playwright can't stream it to the local filesystem directly. The supported path is: switch to the blob tab, call `browser_evaluate` with `filename:` to dump base64 into a file, then decode with Python. Do not try to return the base64 from `evaluate` inline — it will overflow the tool-result token budget.
+- PDFs live in `./data/<ID_NUMBER>/` named `106_<year>_<N>.pdf`. The filename is self-describing; no `document:` schema field is needed.
+- **Form 106 vs Form 101.** Form 106 is the end-of-year salary certificate; Form 101 is the personal-details form filled at the start of employment. This skill retrieves Form 106 only.
+- **Tax coordination form (טופס 116).** If the user had one, the portal may also show a combined row — note this explicitly in the output and trust the per-employer PDFs over any summary line.
+- The portal typically shows 2017 forward (about 9 years of data). Older tax years require a paper request at the user's tax office.
+- Field 158 is *taxable* income (after pension deductions). It is lower than gross salary. If the user questions the number, reassure them Form 135 uses 158, not gross.
+- **Spouse employers.** For married filers, the spouse's Form 106s must be retrieved in a separate run after logging in with the spouse's ID.

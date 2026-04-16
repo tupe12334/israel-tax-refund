@@ -108,11 +108,11 @@ Then immediately run the full `collect-info` skill flow inline — do not ask th
 
 After the `collect-info` skill saves the year's data, read the file and validate that the year's section contains **all required fields** before continuing:
 
-**Required fields (must be non-empty) under `YEARS.<year>`:**
-- `PERSONAL.id` — Israeli ID number
-- `PERSONAL.name` — Full name
-- `BANK` — Bank account details (bank, branch, account number)
-- At least one income source (`EMPLOYERS` with at least one entry, OR other income)
+**Required fields (must be non-empty):**
+- `info.md` → `PERSONAL.id` — Israeli ID number
+- `info.md` → `PERSONAL.name` — Full name
+- `bank.md` → `BANK` — Bank account details (bank, branch, account number) — shared across all years
+- `<year>.md` → at least one income source (`EMPLOYERS` with at least one entry, OR other income)
 
 If **any required field is missing or empty**, do NOT proceed to Phase 2. Instead:
 ```

@@ -250,7 +250,7 @@ Run the `bank-import` skill inline, passing the filer's ID number and full name.
 
 The skill will open the bank portal via Playwright, wait for the user to log in, automatically extract the branch and account numbers, validate them, confirm with the user, and update the data file.
 
-Parse the returned `BANK_IMPORT` block and write it to `YEARS.<year>.BANK` in `./data/<id_number>/info.md`.
+Parse the returned `BANK_IMPORT` block and write it to `./data/<id_number>/bank.md` (shared across all years — not under any `<year>.md`). Follow the `bank.md` schema in `./data/README.md`.
 
 ---
 
@@ -268,6 +268,13 @@ PERSONAL:
   phone: <05X-XXXXXXX>
   email: <email>
   marital_status: <single|married|divorced|widowed>
+
+BANK (shared across all years):
+  bank_number: <N>
+  bank_name: <name>
+  branch_number: <NNN>
+  account_number: <account>
+  account_holder: <name>
 
 YEAR: <year>
 
@@ -316,12 +323,6 @@ YEAR: <year>
     pension_direct:
       - institution: <name>
         annual_amount: <NIS amount>
-
-  BANK:
-    bank_number: <N>
-    branch_number: <NNN>
-    account_number: <account>
-    account_holder: <name>
 
 === END OF SUMMARY ===
 ```
