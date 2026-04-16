@@ -6,16 +6,20 @@ This directory stores filer data files generated during the tax refund flow.
 data/
 ├── .gitkeep              # Keeps this folder tracked in git
 ├── README.md             # This file — canonical schema reference (read this before any filer file)
-└── <id>/                 # One directory per filer, named after the 9-digit Israeli ID number
+├── example/              # Git-tracked reference filer showing the full schema (see below)
+│   ├── info.md
+│   ├── bank.yaml
+│   └── <year>.md
+└── <id>/                 # One directory per real filer, named after the 9-digit Israeli ID number
     ├── info.md           # Personal data shared across all years
-    ├── bank.md           # Bank account for refund deposit — shared across all years
+    ├── bank.yaml         # Bank account for refund deposit — shared across all years
     ├── <year>.md         # Year-specific tax data (e.g. 2024.md, 2023.md)
     ├── session.md        # Login session state (written by the login skill)
     ├── submission.md     # Form 135 submission state (written by the form-fill skill)
     └── *.pdf             # Supporting documents (Form 106, Form 867, IDF certificates, etc.)
 ```
 
-**This directory is gitignored** — its contents are private and should never be committed.
+**Filer subdirectories are gitignored** — their contents are private and should never be committed. The only tracked items inside `data/` are `README.md` and the `example/` folder, which holds dummy-value sample files for reference.
 
 ---
 
@@ -39,14 +43,13 @@ PERSONAL:
 
 ---
 
-## Schema — `<id>/bank.md`
+## Schema — `<id>/bank.yaml`
 
 Holds the refund deposit account. Shared across all years — the Tax Authority deposits every year's refund into the same account.
 
-````markdown
-# Bank Account — <name>
+Plain YAML — no markdown wrapper. A commented sample is at `data/example/bank.yaml`; skills may copy it to `<id>/bank.yaml` as a starting point.
 
-```tax-data
+```yaml
 BANK:
   bank_number: <Israeli bank code>
   bank_name: <name>
@@ -54,7 +57,6 @@ BANK:
   account_number: <account>
   account_holder: <name>
 ```
-````
 
 ---
 
@@ -137,7 +139,7 @@ SUBMISSION:                            # written by form-fill after filing; omit
 
 1. **Read `./data/README.md` first** to get the current schema before reading or writing any filer file.
 2. `PERSONAL` data lives in `info.md` and is shared across all years.
-3. `BANK` data lives in `bank.md` and is shared across all years. The same refund account is used for every year.
+3. `BANK` data lives in `bank.yaml` (plain YAML, no markdown fence) and is shared across all years. The same refund account is used for every year. See `data/example/bank.yaml` for a commented sample.
 4. Year-specific data (income, credits, deductions, submission) lives in `<year>.md`.
 5. `SUBMISSION` is only written by `form-fill` after successful filing. `status: submitted` means that year is done.
 6. When saving a year file, read the existing `<year>.md` first (if it exists) to avoid overwriting data, then rewrite the complete file.

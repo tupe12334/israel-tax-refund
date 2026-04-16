@@ -111,7 +111,7 @@ After the `collect-info` skill saves the year's data, read the file and validate
 **Required fields (must be non-empty):**
 - `info.md` → `PERSONAL.id` — Israeli ID number
 - `info.md` → `PERSONAL.name` — Full name
-- `bank.md` → `BANK` — Bank account details (bank, branch, account number) — shared across all years
+- `bank.yaml` → `BANK` — Bank account details (bank, branch, account number) — shared across all years
 - `<year>.md` → at least one income source (`EMPLOYERS` with at least one entry, OR other income)
 
 If **any required field is missing or empty**, do NOT proceed to Phase 2. Instead:

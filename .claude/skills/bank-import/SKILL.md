@@ -13,7 +13,7 @@ Detect the user's language and respond in it throughout.
 ## STEP 1 — GET FILER CONTEXT
 
 You need the filer's **Israeli ID number** and **full name** to:
-- Know which data file to update (`./data/<id_number>/bank.md`)
+- Know which data file to update (`./data/<id_number>/bank.yaml`)
 - Validate that the account holder name on the bank portal matches the filer
 
 If called inline from `collect-info`, these are already known — use them directly.
@@ -139,7 +139,7 @@ If DOM extraction fails, take a full-page screenshot and read the account detail
 
 ### Save to data file
 
-Bank details are shared across all years — write them to `./data/<id_number>/bank.md` (not the per-year file or `info.md`). Read `./data/README.md` for the `bank.md` schema, then write the file using the Write tool. If the directory doesn't exist yet, create it with `mkdir -p ./data/<id_number>`.
+Bank details are shared across all years — write them as plain YAML (no markdown fence) to `./data/<id_number>/bank.yaml` (not the per-year file or `info.md`). Read `./data/README.md` for the `bank.yaml` schema; `data/example/bank.yaml` is a commented sample. If the directory doesn't exist yet, create it with `mkdir -p ./data/<id_number>`, then write the file using the Write tool.
 
 ### Return structured output
 

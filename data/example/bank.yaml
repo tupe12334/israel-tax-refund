@@ -1,0 +1,30 @@
+# Bank Account — refund deposit account for the Israeli Tax Authority.
+#
+# Shared across all tax years: the Tax Authority deposits every year's refund
+# into the same account, so this file is NOT per-year.
+#
+# To use: copy this file to ./data/<9-digit-id>/bank.yaml and fill in the values.
+# The `bank-import` skill can also auto-populate it from your bank portal.
+
+BANK:
+  # Israeli bank code. Common values:
+  #   10 = Leumi (בנק לאומי)
+  #   11 = Discount (בנק דיסקונט)
+  #   12 = Hapoalim (בנק הפועלים)
+  #   20 = Mizrahi-Tefahot (מזרחי-טפחות)
+  #   31 = First International (הבנק הבינלאומי)
+  # Full accepted list: 9, 10, 11, 12, 13, 14, 17, 20, 22, 26, 31, 34, 46, 52, 54, 67
+  bank_number: 12
+
+  # Hebrew bank name (e.g. "בנק הפועלים"). Informational — the portal uses bank_number.
+  bank_name: בנק הפועלים
+
+  # 3-digit branch number (numeric).
+  branch_number: 123
+
+  # Account number (numeric, no dashes).
+  account_number: 456789
+
+  # Account holder name as registered with the bank.
+  # Should match the filer's name on the ID card — otherwise the Tax Authority may reject the deposit.
+  account_holder: ישראל ישראלי
