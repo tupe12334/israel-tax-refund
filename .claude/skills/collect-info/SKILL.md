@@ -227,8 +227,8 @@ Ask each of the following yes/no questions; collect details only when the answer
 
 ### 8a. Charitable Donations (תרומות)
 "Did you donate to Israeli registered charities during [tax year]? (Minimum qualifying amount: ₪190)"
-- If yes, for each donation: institution name + donation amount.
-- Note: 35% of qualifying donations is refundable.
+- If yes, automatically run the `donation-receipts` skill inline to collect the full receipt details (organisation name, registration number, receipt number, date, and amount) and verify each organisation's Section 46 approval status. Do NOT collect donations manually here — delegate entirely to the `donation-receipts` skill.
+- Note: 35% of qualifying donations to approved Section 46 organisations (עמותות מאושרות לפי סעיף 46) is refundable as a tax credit.
 
 ### 8b. Pension / Life Insurance NOT Through Paycheck
 "Did you make pension, life insurance, or provident fund payments directly (not deducted automatically from your salary)?"
