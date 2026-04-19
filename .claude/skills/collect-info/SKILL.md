@@ -227,7 +227,7 @@ Ask each of the following yes/no questions; collect details only when the answer
 
 ### 8a. Charitable Donations (תרומות)
 "Did you donate to Israeli registered charities during [tax year]? (Minimum qualifying amount: ₪190)"
-- If yes, automatically run the `donation-receipts` skill inline to collect the full receipt details (organisation name, registration number, receipt number, date, and amount) and verify each organisation's Section 46 approval status. Do NOT collect donations manually here — delegate entirely to the `donation-receipts` skill.
+- If yes, automatically run the `donation-receipts` skill inline, passing the already-known `TAX_YEAR` and `FILER_ID` so the sub-skill skips its own context prompts. Do NOT collect donations manually here — delegate entirely to the `donation-receipts` skill. The sub-skill writes `DEDUCTIONS.donations` to `./data/<FILER_ID>/<year>.md` directly.
 - Note: 35% of qualifying donations to approved Section 46 organisations (עמותות מאושרות לפי סעיף 46) is refundable as a tax credit.
 
 ### 8b. Pension / Life Insurance NOT Through Paycheck
@@ -240,7 +240,7 @@ Ask each of the following yes/no questions; collect details only when the answer
 ### 8c. Professional Development Fund — Keren Hishtalmut (קרן השתלמות)
 - Usually handled via paycheck; ask only if the user deposited directly.
 
-**After this step:** update `YEARS.<year>.DEDUCTIONS` in the file.
+**After this step:** update `YEARS.<year>.DEDUCTIONS` in the file with only the 8b/8c fields (pension, keren hishtalmut). Donations were already written to disk by the `donation-receipts` sub-skill — do not overwrite `DEDUCTIONS.donations`. When merging, read the existing file first and preserve the `donations` list.
 
 ---
 

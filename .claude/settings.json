@@ -60,13 +60,18 @@
       "mcp__plugin_playwright_playwright__browser_wait_for",
       "Skill(hapoalim-import)",
       "Skill(bank-import)",
+      "Skill(donation-receipts)",
+      "Skill(code-review:code-review)",
       "Bash(git check-ignore *)",
       "WebFetch(domain:www.kolzchut.org.il)",
       "WebFetch(domain:tofes101.co.il)",
       "WebFetch(domain:www.hachvana.mod.gov.il)",
       "WebFetch(domain:www.hilan.co.il)",
       "WebFetch(domain:www.ardcpa.com)",
-      "WebFetch(domain:www.btl.gov.il)"
+      "WebFetch(domain:www.btl.gov.il)",
+      "Bash(gh api *)",
+      "Bash(gh pr *)",
+      "Bash(git fetch *)"
     ]
   }
 }

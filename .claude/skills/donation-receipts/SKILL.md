@@ -16,7 +16,7 @@ Under Section 46 of the Israeli Income Tax Ordinance (סעיף 46 לפקודת �
 
 Key rules:
 - The minimum qualifying donation per receipt is **₪190** (updated periodically by the Tax Authority).
-- The annual ceiling for the credit is **30% of taxable income** (or ₪9,372,000 if lower — whichever is lower).
+- The annual ceiling for the credit is the lower of **30% of taxable income** or **₪9,372,000**.
 - Only donations to organisations holding a current **Section 46 certificate** (אישור לפי סעיף 46) are eligible. The certificate is issued by the Tax Authority and must be valid for the donation year.
 - The donor must hold an **official receipt (קבלה)** from the organisation.
 - Donations in kind (non-monetary) do not qualify.
@@ -31,7 +31,7 @@ Tax Authority portal: https://www.misim.gov.il
 
 - Ask one logical group at a time. Never dump all questions at once.
 - Acknowledge each answer briefly and move on.
-- **Save after every step** — do not batch to the end. See SAVING section.
+- **Save after each receipt is confirmed** — do not batch to the end. See SAVING section.
 - If the user is unsure whether an organisation is approved, help them check (see STEP 2).
 - At the end, print a full structured summary and ask the user to confirm before saving.
 
@@ -52,7 +52,7 @@ ls ./data/
 If filer data exists, extract:
 - `FILER_ID` — 9-digit ID from `PERSONAL.id`
 - `FILER_NAME` — from `PERSONAL.name`
-- Ask: "Which tax year are you adding donation receipts for?" (valid range: current year − 1 going back 6 years)
+- `TAX_YEAR` — if already provided in context (e.g., when called inline from `collect-info`), use it directly without asking. Otherwise ask: "Which tax year are you adding donation receipts for?" (valid range: current year − 1 going back 6 years)
 
 ---
 
@@ -113,8 +113,9 @@ After all receipts are collected, compute and display:
 
 | Item | Value |
 |---|---|
-| Total qualifying donations | ₪ [sum of all amounts ≥ ₪190] |
-| Estimated tax credit (35%) | ₪ [total × 0.35] |
+| Total qualifying donations | ₪ [sum of amounts ≥ ₪190 where `pending_verification` is not true] |
+| Pending / unverified donations | ₪ [sum of amounts with `pending_verification: true` — excluded from credit until completed] |
+| Estimated tax credit (35%) | ₪ [qualifying total × 0.35] |
 | Note | Actual credit is capped at 30% of your taxable income. The form-fill skill will apply the exact cap when filing. |
 
 Example display:
@@ -159,7 +160,7 @@ DEDUCTIONS:
 Rules:
 1. Read `./data/README.md` before writing to get the canonical full-file schema.
 2. Read the existing `./data/<FILER_ID>/<year>.md` (if it exists) before writing, to avoid overwriting `EMPLOYERS`, `TAX_CREDITS`, or other sections.
-3. Replace only the `DEDUCTIONS.donations` list — preserve all other sections as-is.
+3. Build the complete in-memory donations list (all receipts collected so far in this session, plus any that were already on disk), then replace the `DEDUCTIONS.donations` list with the full accumulated list — never write only the most recently confirmed receipt.
 4. Write silently; a brief "(saved)" in the acknowledgement message is enough.
 
 ---
@@ -194,7 +195,7 @@ Direct portal entry: https://www.misim.gov.il
 - Keep all original receipts (physical or scanned) for **at least 7 years** — the Tax Authority may request them in an audit.
 - Only donate to organisations whose Section 46 certificate is **valid for the donation year**. An organisation can lose its certificate; always verify.
 - If you donated to a foreign organisation (e.g., an international charity with no Israeli Section 46 status), the donation does **not** qualify.
-- The 35% credit is calculated on the **net qualifying amount** after applying the annual minimum threshold.
+- The ₪190 minimum is a **per-receipt** threshold — each individual donation must be ≥ ₪190 to qualify. It is not an annual deductible subtracted from the total.
 - Joint filers (married couples): the credit is calculated on the combined qualifying donations.
 
 ---
