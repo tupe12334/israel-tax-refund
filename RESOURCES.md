@@ -58,6 +58,17 @@ Links to learn about the refund process, the tax authority portal, and the under
 
 ---
 
+## Charitable Donations Tax Credit (סעיף 46 — Section 46)
+
+| Resource | URL | Notes |
+| --- | --- | --- |
+| Section 46 approved organisations search (Misim) | https://www.misim.gov.il/ms46saif/action | Search by organisation name or registration number to verify a valid Section 46 certificate |
+| Gov.il — donations tax credit guide | https://www.gov.il/he/departments/guides/guide_donations_tax | Official eligibility and rules for the 35% donation credit |
+| Tax Authority — Section 46 certificate list | https://taxes.gov.il/incometax/pages/maslul46.aspx | Downloadable list of all currently approved organisations |
+| Income Tax Ordinance — Section 46 full text | https://www.nevo.co.il/law_html/Law01/P209_006.htm | Legal source (Hebrew, Nevo) |
+
+---
+
 ## Key Concepts Glossary
 
 | Hebrew Term  | English           | Relevance                                                   |
@@ -70,3 +81,7 @@ Links to learn about the refund process, the tax authority portal, and the under
 | מס הכנסה     | Income tax        | The tax type being refunded                                 |
 | רשות המסים   | Tax Authority     | The government body managing the process                    |
 | אתר מיסים    | Misim portal      | The web portal this project automates                       |
+| סעיף 46      | Section 46        | Income Tax Ordinance clause granting a 35% credit for donations to approved non-profits |
+| עמותה        | Non-profit / NGO  | Israeli registered non-profit organisation                   |
+| קבלה         | Receipt           | Official donation receipt required to claim the credit      |
+| זיכוי מס     | Tax credit        | Reduction applied directly to tax owed (not a deduction from income) |
