@@ -103,6 +103,10 @@ The tax authority portal sends OTP to the phone number registered on your ID. Ma
 **Session timeout**
 Government portals often have short session windows. If Claude loses the session mid-flow, ask it to restart the browser and try again.
 
+## Related Projects
+
+- [moadim](https://moadim.io/) — loop engineering: build, schedule & run agent loops (from the same author).
+
 ## Contributing
 
 Improvements to the CLAUDE.md instructions, skills, or Playwright flow are welcome. Open a PR or issue on [tupe12334/israel-tax-refund](https://github.com/tupe12334/israel-tax-refund).
